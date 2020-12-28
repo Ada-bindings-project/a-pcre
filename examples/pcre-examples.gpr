@@ -1,0 +1,11 @@
+with "../pcre.gpr";
+
+project Pcre.Examples is
+   for Create_Missing_Dirs use "True";
+   for Source_Dirs use ("src/**");
+   for Object_Dir use ".obj";
+   for Exec_Dir use "bin";
+   for Main use ("main.adb");
+
+end Pcre.Examples;
+

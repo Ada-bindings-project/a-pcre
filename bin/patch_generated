@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+import glob
+from os.path import *
+import subprocess
+import sys
+import os
+
+class SEDer:
+        def __init__(self,srcdir,seddir):
+                self.srcdir=srcdir
+                self.srcs=glob.glob(join(srcdir,"*.ads"))
+                self.global_seds=[]
+                self.file_seds=[]
+                self.read_seds(seddir)
+        
+        def read_seds(self,seddir):
+                for root, dirs, files in os.walk(seddir):
+                        for f in files:
+                                name, ext = splitext(f)
+                                if ext == ".sed":
+                                        if  name[0] == "_" or name == "all":
+                                                self.global_seds.append(join(root,f))
+                                        else:
+                                                self.file_seds.append(join(root,f))
+                self.global_seds.sort()
+        def _patch(self,sed,srcs):
+                print (sed)
+                result = subprocess.call(["sed", "-i", "--regexp-extended", "-f" , sed] + srcs)
+                if result != 0:
+                        sys.exit(result)
+        def patch(self):                
+                for sed in self.global_seds:
+                        srcs=glob.glob("src/gen/*.ads")
+                        self._patch(sed,  srcs)
+                for sed in self.file_seds:
+                        name,ext = splitext(basename(sed))
+                        src=join("src","gen", name + ".ads")
+                        if exists(src):
+                            self._patch(sed,  [src])
+
+if __name__ == "__main__":
+        SEDer("src/gen","sed").patch()

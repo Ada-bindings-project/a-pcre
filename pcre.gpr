@@ -1,0 +1,47 @@
+project Pcre is
+   for Create_Missing_Dirs use "True";
+   for Source_Dirs use ("src/**",".","sed");
+   for Object_Dir use ".obj";
+   for Library_Name use "APcre";
+   for Library_Dir use "lib";
+   for Languages use ("Ada", "C++", "MarkDown", "Makefile", "Sed");
+
+   package Pretty_Printer is
+      for Default_Switches ("ada") use ("-M128", 
+                                        "-N", 
+                                        "-c3", 
+                                        "-c4", 
+                                        "-c5", 
+                                        "-A1", 
+                                        "-A0", 
+                                        "-A3", 
+                                        "-A4", 
+                                        "-A5", 
+                                        "-A2", 
+                                        "-e",
+                                        "--comments-unchanged",
+                                        "--source-line-breaks",
+                                        "--vertical-enum-types");
+   end Pretty_Printer;
+
+   package Builder is
+      for Switches ("Ada") use ("-j0", "-k", "-g", "-s");
+   end Builder;
+
+   package Compiler is
+      for Driver ("C++") use "";
+      for Driver ("MarkDown") use "";
+      for Driver ("Makefile") use "";
+      for Driver ("Sed") use "";
+      for Switches ("Ada") use ("-gnat2020", "-g", "-gnatf", "-fcallgraph-info=su,da", "-fdata-sections", "-ffunction-sections", "-gnatwa", "-gnatyBabcdfhikln");
+   end Compiler;
+
+   package Naming is
+      for Body_Suffix ("makefile") use ".mk";
+      for Body_Suffix ("MarkDown") use ".md";
+      for Body_Suffix ("sed") use ".sed";
+      for Implementation_Exceptions ("makefile") use ("Makefile");
+   end Naming;
+   
+end Pcre;
+
