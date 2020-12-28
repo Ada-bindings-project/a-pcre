@@ -1,9 +1,20 @@
 pragma Ada_2012;
+with Ada.Unchecked_Conversion;
 package body Pcre.Matcher is
-   procedure Retcode_2_Exception (Code : int ) is
+   function As_PCRE2_SPTR8 is new Ada.Unchecked_Conversion (System.Address, PCRE2_SPTR8);
+
+   function Get_Error_Message (Code : int) return String is
+      Ret : int;
+      Buffer : String (1 .. 1024);
    begin
-      if Code /= 0 then
-         raise Program_Error with Code'Img;
+      Ret := Pcre2_Get_Error_Message_8 (Code, As_PCRE2_SPTR8 (Buffer'Address), Buffer'Length);
+      return Buffer (Buffer'First .. Natural (Ret));
+   end;
+
+   procedure Retcode_2_Exception (Code : int) is
+   begin
+      if Code /= 0 and then Code /= 100 then
+         raise PCRE_ERROR with "[" & Code'Img & "] " & Get_Error_Message (Code);
       end if;
    end;
    ------------
@@ -20,8 +31,8 @@ package body Pcre.Matcher is
    -- Set_Bsr --
    -------------
 
-   Bsr_Type_Maping : array (Bsr_Type) of Unsigned := (ANYCRLF => PCRE2_BSR_ANYCRLF,
-                                                      UNICODE => PCRE2_BSR_UNICODE);
+   Bsr_Type_Maping : constant array (Bsr_Type) of Unsigned := (ANYCRLF => PCRE2_BSR_ANYCRLF,
+                                                               UNICODE => PCRE2_BSR_UNICODE);
    procedure Set (Arg1 : Compile_Context; Arg2 : Bsr_Type)
    is
    begin
@@ -60,27 +71,27 @@ package body Pcre.Matcher is
    ----------------------------
 
    procedure Set_Max_Pattern_Length
-     (Arg1 : Compile_Context; Arg2 : unsigned_long)
+     (Arg1 : Compile_Context; Arg2 : Natural)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Max_Pattern_Length_8 (Arg1.Impl, Arg2));
+      Retcode_2_Exception (Pcre2_Set_Max_Pattern_Length_8 (Arg1.Impl, unsigned_long (Arg2)));
    end Set_Max_Pattern_Length;
 
    -----------------
    -- Set_Newline --
    -----------------
    NEW_LINE_MAP : constant array (NEW_LINE_TYPE) of Unsigned :=
-                    (Cr => PCRE2_NEWLINE_CR,
-                     Lf   => PCRE2_NEWLINE_LF,
+                    (Cr      => PCRE2_NEWLINE_CR,
+                     Lf      => PCRE2_NEWLINE_LF,
                      Crlf    => PCRE2_NEWLINE_CRLF,
                      Anycrlf => PCRE2_NEWLINE_ANYCRLF,
                      Any     => PCRE2_NEWLINE_ANY,
                      Nul     => PCRE2_NEWLINE_NUL);
    procedure Set_Newline
-     (Arg1 : Compile_Context; Arg2 : NEW_LINE_TYPE)
+     (Context : Compile_Context; Arg2 : NEW_LINE_TYPE)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Newline_8 (Arg1.Impl, NEW_LINE_MAP(Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Newline_8 (Context.Impl, NEW_LINE_MAP (Arg2)));
    end Set_Newline;
 
    ---------------------------
@@ -88,10 +99,10 @@ package body Pcre.Matcher is
    ---------------------------
 
    procedure Set_Parens_Nest_Limit
-     (Arg1 : Compile_Context; Arg2 : Positive)
+     (Context : Compile_Context; Arg2 : Positive)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Parens_Nest_Limit_8 (Arg1.Impl, UNSIGNED (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Parens_Nest_Limit_8 (Context.Impl, UNSIGNED (Arg2)));
    end Set_Parens_Nest_Limit;
 
    ---------------------------------
@@ -104,11 +115,13 @@ package body Pcre.Matcher is
    end;
 
    procedure Set_Compile_Recursion_Guard
-     (Arg1  : access Compile_Context;
+     (Arg1  : in out Compile_Context;
       Guard : not null Recursion_Guard_Interface_Access)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Compile_Recursion_Guard_8 (Arg1.Impl, Arg2, Arg1.all'Address));
+      Arg1.Guard := Guard;
+      null;
+      --  Retcode_2_Exception (Pcre2_Set_Compile_Recursion_Guard_8 (Arg1.Impl, Arg2, Arg1.all'Address));
    end Set_Compile_Recursion_Guard;
 
 
@@ -116,12 +129,10 @@ package body Pcre.Matcher is
    -- Set_Glob_Escape --
    ---------------------
 
-   procedure Set_Glob_Escape (Arg1 : access Convert_Context; Arg2 : Unsigned)
+   procedure Set_Glob_Escape (Context : Convert_Context; Arg2 : Character)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Glob_Escape unimplemented");
-      raise Program_Error with "Unimplemented procedure Set_Glob_Escape";
+      Retcode_2_Exception (Pcre2_Set_Glob_Escape_8 (Context.Impl, Character'Pos (Arg2)));
    end Set_Glob_Escape;
 
    ------------------------
@@ -129,27 +140,26 @@ package body Pcre.Matcher is
    ------------------------
 
    procedure Set_Glob_Separator
-     (Arg1 : access Convert_Context; Arg2 : Unsigned)
+     (Arg1 : Convert_Context; Arg2 : Glob_Separator)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Glob_Separator unimplemented");
-      raise Program_Error with "Unimplemented procedure Set_Glob_Separator";
+      Retcode_2_Exception (Pcre2_Set_Glob_Separator_8 (Arg1.Impl, Glob_Separator'Pos (Arg2)));
    end Set_Glob_Separator;
 
    ---------------------
    -- Pattern_Convert --
    ---------------------
 
-   function Pattern_Convert
-     (Arg1 : access Character; Arg2 : unsigned_long; Arg3 : Unsigned;
-      Arg4 : System.Address; Arg5 : access unsigned_long;
-      Arg6 : access Convert_Context) return int
+   procedure Pattern_Convert
+     (Pattern   : String;
+      Options   : Unsigned;
+      Buffer    : System.Address;
+      Blength   : access unsigned_long;
+      Cvcontext : access Convert_Context)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Pattern_Convert unimplemented");
-      return raise Program_Error with "Unimplemented function Pattern_Convert";
+      --  pragma Compile_Time_Warning (Standard.True, "Pattern_Convert unimplemented");
+      raise Program_Error with "Unimplemented function Pattern_Convert";
    end Pattern_Convert;
 
    ----------------------------
@@ -158,50 +168,11 @@ package body Pcre.Matcher is
 
    procedure Converted_Pattern_Free (Arg1 : access Character) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Converted_Pattern_Free unimplemented");
-      raise Program_Error
-        with "Unimplemented procedure Converted_Pattern_Free";
+      --  pragma Compile_Time_Warning(Standard.True, "Converted_Pattern_Free unimplemented");
+      raise Program_Error with "Unimplemented procedure Converted_Pattern_Free";
    end Converted_Pattern_Free;
 
-   ------------------------
-   -- Match_Context_Copy --
-   ------------------------
 
-   function Match_Context_Copy
-     (Arg1 : access Match_Context) return access Match_Context
-   is
-   begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Match_Context_Copy unimplemented");
-      return
-        raise Program_Error with "Unimplemented function Match_Context_Copy";
-   end Match_Context_Copy;
-
-   --------------------------
-   -- Match_Context_Create --
-   --------------------------
-
-   function Match_Context_Create
-     (Arg1 : access General_Context) return access Match_Context'Class
-   is
-   begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Match_Context_Create unimplemented");
-      return
-        raise Program_Error with "Unimplemented function Match_Context_Create";
-   end Match_Context_Create;
-
-   ------------------------
-   -- Match_Context_Free --
-   ------------------------
-
-   procedure Match_Context_Free (Arg1 : access Match_Context) is
-   begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Match_Context_Free unimplemented");
-      raise Program_Error with "Unimplemented procedure Match_Context_Free";
-   end Match_Context_Free;
 
    -----------------
    -- Set_Callout --
@@ -214,7 +185,6 @@ package body Pcre.Matcher is
       Arg3 : System.Address)
    is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Set_Callout unimplemented");
       raise Program_Error with "Unimplemented procedure Set_Callout";
    end Set_Callout;
 
@@ -226,47 +196,38 @@ package body Pcre.Matcher is
      (Arg1 : access Match_Context;
       Arg2 : access function
         (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address)
-         return int;
+      return int;
       Arg3 : System.Address)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Substitute_Callout unimplemented");
-      raise Program_Error
-        with "Unimplemented procedure Set_Substitute_Callout";
+      raise Program_Error with "Unimplemented procedure Set_Substitute_Callout";
    end Set_Substitute_Callout;
 
    ---------------------
    -- Set_Depth_Limit --
    ---------------------
 
-   procedure Set_Depth_Limit (Arg1 : access Match_Context; Arg2 : Unsigned) is
+   procedure Set_Depth_Limit (Arg1 : Match_Context; Arg2 : Natural) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Depth_Limit unimplemented");
-      raise Program_Error with "Unimplemented procedure Set_Depth_Limit";
+      Retcode_2_Exception (Pcre2_Set_Depth_Limit_8 (Arg1.Impl, Unsigned (Arg2)));
    end Set_Depth_Limit;
 
    --------------------
    -- Set_Heap_Limit --
    --------------------
 
-   procedure Set_Heap_Limit (Arg1 : access Match_Context; Arg2 : Unsigned) is
+   procedure Set_Heap_Limit (Context : access Match_Context; Arg2 : System.Storage_Elements.Storage_Count) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Heap_Limit unimplemented");
-      raise Program_Error with "Unimplemented procedure Set_Heap_Limit";
+      Retcode_2_Exception (Pcre2_Set_Heap_Limit_8 (Context.Impl, Unsigned (Arg2)));
    end Set_Heap_Limit;
 
    ---------------------
    -- Set_Match_Limit --
    ---------------------
 
-   procedure Set_Match_Limit (Arg1 : access Match_Context; Arg2 : Unsigned) is
+   procedure Set_Match_Limit (Context : access Match_Context; Arg2 : Natural) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Match_Limit unimplemented");
-      raise Program_Error with "Unimplemented procedure Set_Match_Limit";
+      Retcode_2_Exception (Pcre2_Set_Match_Limit_8 (Context.Impl, Unsigned (Arg2)));
    end Set_Match_Limit;
 
    ----------------------
@@ -274,24 +235,20 @@ package body Pcre.Matcher is
    ----------------------
 
    procedure Set_Offset_Limit
-     (Arg1 : access Match_Context; Arg2 : unsigned_long)
+     (Context : access Match_Context; Arg2 : Natural)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Offset_Limit unimplemented");
-      raise Program_Error with "Unimplemented procedure Set_Offset_Limit";
+      Retcode_2_Exception (Pcre2_Set_Offset_Limit_8 (Context.Impl, unsigned_long (Arg2)));
    end Set_Offset_Limit;
 
    -------------------------
    -- Set_Recursion_Limit --
    -------------------------
 
-   procedure Set_Recursion_Limit (Arg1 : access Match_Context; Arg2 : Unsigned)
+   procedure Set_Recursion_Limit (Arg1 : access Match_Context; Arg2 : Natural)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Recursion_Limit unimplemented");
-      raise Program_Error with "Unimplemented procedure Set_Recursion_Limit";
+      Retcode_2_Exception (pcre2_set_recursion_limit_8 (Arg1.Impl, Unsigned (Arg2)));
    end Set_Recursion_Limit;
 
    -------------------------------------
@@ -299,15 +256,12 @@ package body Pcre.Matcher is
    -------------------------------------
 
    procedure Set_Recursion_Memory_Management
-     (Arg1 : access Match_Context;
-      Arg2 : access function
-        (Arg1 : unsigned_long; Arg2 : System.Address) return System.Address;
+     (Context : access Match_Context;
+      Arg2 : access function (Arg1 : unsigned_long; Arg2 : System.Address) return System.Address;
       Arg3 : access procedure (Arg1 : System.Address; Arg2 : System.Address);
-      Arg4 : System.Address)
+      Arg4    : System.Address)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Set_Recursion_Memory_Management unimplemented");
       raise Program_Error
         with "Unimplemented procedure Set_Recursion_Memory_Management";
    end Set_Recursion_Memory_Management;
@@ -315,63 +269,39 @@ package body Pcre.Matcher is
    -------------
    -- Compile --
    -------------
-
    function Compile
-     (Arg1 : access Character; Arg2 : unsigned_long; Arg3 : Unsigned;
-      Arg4 : access int; Arg5 : access unsigned_long;
-      Arg6 : access Compile_Context) return access Code'Class
+     (Pattern : String;           --  A string containing expression to be compiled
+      Options : Compile_Options := Null_Compile_Options;
+      Context : Compile_Context'Class := Null_Compile_Context) return Code
    is
+      Errocode : aliased Int;
+      Erroroffset : aliased unsigned_long;
    begin
-      pragma Compile_Time_Warning (Standard.True, "Compile unimplemented");
-      return raise Program_Error with "Unimplemented function Compile";
+      return Ret : Code do
+         Ret.Impl := Pcre2_Compile_8 (As_PCRE2_SPTR8 (Pattern (Pattern'First)'Address),
+                                      Pattern'Length,
+                                      Unsigned (Options),
+                                      Errocode'Access,
+                                      Erroroffset'Access,
+                                      Context.Impl);
+
+         if Errocode /= 0 then
+            Retcode_2_Exception (Errocode);
+         end if;
+      end return;
    end Compile;
 
-   ---------------
-   -- Code_Free --
-   ---------------
-
-   procedure Code_Free (Arg1 : access Code) is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Code_Free unimplemented");
-      raise Program_Error with "Unimplemented procedure Code_Free";
-   end Code_Free;
-
-   ---------------
-   -- Code_Copy --
-   ---------------
-
-   function Code_Copy (Arg1 : access constant Code) return access Code is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Code_Copy unimplemented");
-      return raise Program_Error with "Unimplemented function Code_Copy";
-   end Code_Copy;
-
-   ---------------------------
-   -- Code_Copy_With_Tables --
-   ---------------------------
-
-   function Code_Copy_With_Tables
-     (Arg1 : access constant Code) return access Code
-   is
-   begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Code_Copy_With_Tables unimplemented");
-      return
-        raise Program_Error
-          with "Unimplemented function Code_Copy_With_Tables";
-   end Code_Copy_With_Tables;
 
    ------------------
    -- Pattern_Info --
    ------------------
 
    function Pattern_Info
-     (Arg1 : access constant Code; Arg2 : Unsigned; Arg3 : System.Address)
-      return int
+     (Arg1 : Code;
+      Arg2 : Unsigned;
+      Arg3 : System.Address) return int
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Pattern_Info unimplemented");
       return raise Program_Error with "Unimplemented function Pattern_Info";
    end Pattern_Info;
 
@@ -380,96 +310,92 @@ package body Pcre.Matcher is
    -----------------------
 
    function Callout_Enumerate
-     (Arg1 : access constant Code;
-      Arg2 : access function
-        (Arg1 : access Callout_Enumerate_Block; Arg2 : System.Address)
-         return int;
+     (Arg1 : Code;
+      Arg2 : access function (Arg1 : access Callout_Enumerate_Block; Arg2 : System.Address) return int;
       Arg3 : System.Address) return int
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Callout_Enumerate unimplemented");
-      return
-        raise Program_Error with "Unimplemented function Callout_Enumerate";
+      return raise Program_Error with "Unimplemented function Callout_Enumerate";
    end Callout_Enumerate;
 
    -----------------------
    -- Match_Data_Create --
    -----------------------
 
-   function Match_Data_Create
-     (Arg1 : Unsigned; Arg2 : access General_Context)
-      return access Match_Data'Class
+   function Create
+     (Size    : Positive;
+      Context : General_Context'Class := Null_General_Context) return Match_Data
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Match_Data_Create unimplemented");
-      return
-        raise Program_Error with "Unimplemented function Match_Data_Create";
-   end Match_Data_Create;
+      return Ret : Match_Data do
+         Ret.Impl := Pcre2_Match_Data_Create_8 (Unsigned (Size), Context.Impl);
+      end return;
+   end Create;
 
    ------------------------------------
    -- Match_Data_Create_From_Pattern --
    ------------------------------------
 
-   function Match_Data_Create_From_Pattern
-     (Arg1 : access constant Code; Arg2 : access General_Context'Class)
-      return access Match_Data'Class
+   function Create
+     (Code    : Pcre.Matcher.Code'Class;
+      Context : General_Context'Class := Null_General_Context) return Match_Data
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Match_Data_Create_From_Pattern unimplemented");
-      return
-        raise Program_Error
-          with "Unimplemented function Match_Data_Create_From_Pattern";
-   end Match_Data_Create_From_Pattern;
+      return Ret : Match_Data do
+         Ret.Impl := Pcre2_Match_Data_Create_From_Pattern_8 (Code.Impl, Context.Impl);
+      end return;
+   end Create;
 
    ---------------
    -- Dfa_Match --
    ---------------
 
    function Dfa_Match
-     (Arg1 : access constant Code; Arg2 : access Character;
-      Arg3 : unsigned_long; Arg4 : unsigned_long; Arg5 : Unsigned;
-      Arg6 : access Match_Data'Class; Arg7 : access Match_Context'Class;
-      Arg8 : access int; Arg9 : unsigned_long) return int
+     (Code        : Pcre.Matcher.Code;
+      Subject     : String;
+      Startoffset : Natural;
+      Options     : Match_Options;
+      Match_Data  : out Pcre.Matcher.Match_Data'Class;
+      Context     : Pcre.Matcher.Match_Context'Class := Null_Match_Context;
+      workspace   : Workspace_Type) return int
    is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Dfa_Match unimplemented");
       return raise Program_Error with "Unimplemented function Dfa_Match";
    end Dfa_Match;
 
    -----------
    -- Match --
    -----------
+   function "+" (L, R : Match_Options) return Match_Options is
+   begin
+      return Match_Options (Unsigned (L)+ Unsigned (R));
+   end;
 
    function Match
-     (Arg1 : access constant Code; Arg2 : access Character;
-      Arg3 : unsigned_long; Arg4 : unsigned_long; Arg5 : Unsigned;
-      Arg6 : access Match_Data'Class; Arg7 : access Match_Context'Class)
-      return int
+     (Code        : Pcre.Matcher.Code;
+      Subject     : String;
+      Startoffset : Natural := 0;
+      Options     : Match_Options := Null_Match_Options;
+      Match_Data  : out Pcre.Matcher.Match_Data'Class;
+      Context     : Match_Context'Class := Null_Match_Context) return int
    is
+      Ret : int;
    begin
-      pragma Compile_Time_Warning (Standard.True, "Match unimplemented");
-      return raise Program_Error with "Unimplemented function Match";
+      Ret := Pcre2_Match_8 (Code.Impl,
+                            As_PCRE2_SPTR8 (Subject'Address),
+                            Subject'Length,
+                            Unsigned_Long (Startoffset),
+                            Unsigned (Options),
+                            Match_Data.Impl,
+                            Context.Impl);
+      return Ret;
    end Match;
-
-   ---------------------
-   -- Match_Data_Free --
-   ---------------------
-
-   procedure Match_Data_Free (Arg1 : access Match_Data) is
-   begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Match_Data_Free unimplemented");
-      raise Program_Error with "Unimplemented procedure Match_Data_Free";
-   end Match_Data_Free;
 
    --------------
    -- Get_Mark --
    --------------
 
-   function Get_Mark (Arg1 : access Match_Data) return access Character is
+   function Get_Mark (Match_Data : Pcre.Matcher.Match_Data) return access Character is
    begin
       pragma Compile_Time_Warning (Standard.True, "Get_Mark unimplemented");
       return raise Program_Error with "Unimplemented function Get_Mark";
@@ -479,25 +405,19 @@ package body Pcre.Matcher is
    -- Get_Match_Data_Size --
    -------------------------
 
-   function Get_Match_Data_Size (Arg1 : access Match_Data) return unsigned_long
+   function Get_Match_Data_Size (Match_Data : Pcre.Matcher.Match_Data) return Natural
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Get_Match_Data_Size unimplemented");
-      return
-        raise Program_Error with "Unimplemented function Get_Match_Data_Size";
+      return Natural(Pcre2_Get_Match_Data_Size_8 (Match_Data.Impl));
    end Get_Match_Data_Size;
 
    -----------------------
    -- Get_Ovector_Count --
    -----------------------
 
-   function Get_Ovector_Count (Arg1 : access Match_Data) return Unsigned is
+   function Get_Ovector_Count (Match_Data : Pcre.Matcher.Match_Data) return Natural is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Get_Ovector_Count unimplemented");
-      return
-        raise Program_Error with "Unimplemented function Get_Ovector_Count";
+      return Natural(Pcre2_Get_Ovector_Count_8 (Match_Data.Impl));
    end Get_Ovector_Count;
 
    -------------------------
@@ -505,20 +425,20 @@ package body Pcre.Matcher is
    -------------------------
 
    function Get_Ovector_Pointer
-     (Arg1 : access Match_Data) return access unsigned_long
+     (Match_Data : Pcre.Matcher.Match_Data) return access unsigned_long
    is
    begin
       pragma Compile_Time_Warning
         (Standard.True, "Get_Ovector_Pointer unimplemented");
       return
-        raise Program_Error with "Unimplemented function Get_Ovector_Pointer";
+      raise Program_Error with "Unimplemented function Get_Ovector_Pointer";
    end Get_Ovector_Pointer;
 
    -------------------
    -- Get_Startchar --
    -------------------
 
-   function Get_Startchar (Arg1 : access Match_Data) return unsigned_long is
+   function Get_Startchar (Match_Data : Pcre.Matcher.Match_Data) return unsigned_long is
    begin
       pragma Compile_Time_Warning
         (Standard.True, "Get_Startchar unimplemented");
@@ -530,15 +450,17 @@ package body Pcre.Matcher is
    ---------------------------
 
    function Substring_Copy_Byname
-     (Arg1 : access Match_Data; Arg2 : access Character;
-      Arg3 : access Character; Arg4 : access unsigned_long) return int
+     (Arg1 : Match_Data;
+      Arg2 : Character;
+      Arg3 : Character;
+      Arg4 : unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Copy_Byname unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Substring_Copy_Byname";
+      raise Program_Error
+        with "Unimplemented function Substring_Copy_Byname";
    end Substring_Copy_Byname;
 
    -----------------------------
@@ -553,8 +475,8 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Copy_Bynumber unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Substring_Copy_Bynumber";
+      raise Program_Error
+        with "Unimplemented function Substring_Copy_Bynumber";
    end Substring_Copy_Bynumber;
 
    --------------------
@@ -580,7 +502,7 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Get_Byname unimplemented");
       return
-        raise Program_Error with "Unimplemented function Substring_Get_Byname";
+      raise Program_Error with "Unimplemented function Substring_Get_Byname";
    end Substring_Get_Byname;
 
    ----------------------------
@@ -595,8 +517,8 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Get_Bynumber unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Substring_Get_Bynumber";
+      raise Program_Error
+        with "Unimplemented function Substring_Get_Bynumber";
    end Substring_Get_Bynumber;
 
    -----------------------------
@@ -611,8 +533,8 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Length_Byname unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Substring_Length_Byname";
+      raise Program_Error
+        with "Unimplemented function Substring_Length_Byname";
    end Substring_Length_Byname;
 
    -------------------------------
@@ -627,8 +549,8 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Length_Bynumber unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Substring_Length_Bynumber";
+      raise Program_Error
+        with "Unimplemented function Substring_Length_Bynumber";
    end Substring_Length_Bynumber;
 
    ------------------------------
@@ -643,8 +565,8 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Nametable_Scan unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Substring_Nametable_Scan";
+      raise Program_Error
+        with "Unimplemented function Substring_Nametable_Scan";
    end Substring_Nametable_Scan;
 
    --------------------------------
@@ -658,8 +580,8 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_Number_From_Name unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Substring_Number_From_Name";
+      raise Program_Error
+        with "Unimplemented function Substring_Number_From_Name";
    end Substring_Number_From_Name;
 
    -------------------------
@@ -685,7 +607,7 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Substring_List_Get unimplemented");
       return
-        raise Program_Error with "Unimplemented function Substring_List_Get";
+      raise Program_Error with "Unimplemented function Substring_List_Get";
    end Substring_List_Get;
 
    ----------------------
@@ -700,7 +622,7 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Serialize_Encode unimplemented");
       return
-        raise Program_Error with "Unimplemented function Serialize_Encode";
+      raise Program_Error with "Unimplemented function Serialize_Encode";
    end Serialize_Encode;
 
    ----------------------
@@ -715,7 +637,7 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Serialize_Decode unimplemented");
       return
-        raise Program_Error with "Unimplemented function Serialize_Decode";
+      raise Program_Error with "Unimplemented function Serialize_Decode";
    end Serialize_Decode;
 
    -----------------------------------
@@ -728,8 +650,8 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Serialize_Get_Number_Of_Codes unimplemented");
       return
-        raise Program_Error
-          with "Unimplemented function Serialize_Get_Number_Of_Codes";
+      raise Program_Error
+        with "Unimplemented function Serialize_Get_Number_Of_Codes";
    end Serialize_Get_Number_Of_Codes;
 
    --------------------
@@ -808,7 +730,7 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Jit_Stack_Create unimplemented");
       return
-        raise Program_Error with "Unimplemented function Jit_Stack_Create";
+      raise Program_Error with "Unimplemented function Jit_Stack_Create";
    end Jit_Stack_Create;
 
    ----------------------
@@ -846,7 +768,7 @@ package body Pcre.Matcher is
       pragma Compile_Time_Warning
         (Standard.True, "Get_Error_Message unimplemented");
       return
-        raise Program_Error with "Unimplemented function Get_Error_Message";
+      raise Program_Error with "Unimplemented function Get_Error_Message";
    end Get_Error_Message;
 
    ----------------
@@ -890,7 +812,7 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out General_Context) is
    begin
-      Object.Impl := pcre2_general_context_copy_8 (Object.Impl);
+      Object.Impl := Pcre2_General_Context_Copy_8 (Object.Impl);
    end Adjust;
 
    --------------
@@ -899,13 +821,13 @@ package body Pcre.Matcher is
 
    procedure Finalize (Object : in out General_Context) is
    begin
-      pcre2_general_context_free_8 (Object.Impl);
+      Pcre2_General_Context_Free_8 (Object.Impl);
    end Finalize;
 
    ----------------
    -- Initialize --
    ----------------
-   function Create (From : General_Context'Class) return Compile_Context is
+   function Create (From : General_Context'Class := Null_General_Context) return Compile_Context is
    begin
       return Ret : Compile_Context do
          Ret.Impl := Pcre2_Compile_Context_Create_8 (From.Impl);
@@ -998,8 +920,7 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out Code) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Adjust unimplemented");
-      raise Program_Error with "Unimplemented procedure Adjust";
+      Object.Impl := Pcre2_Code_Copy_With_Tables_8 (Object.Impl);
    end Adjust;
 
    --------------
@@ -1008,19 +929,8 @@ package body Pcre.Matcher is
 
    procedure Finalize (Object : in out Code) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Finalize unimplemented");
-      raise Program_Error with "Unimplemented procedure Finalize";
+      Pcre2_Code_Free_8 (Object.Impl);
    end Finalize;
-
-   ----------------
-   -- Initialize --
-   ----------------
-
-   procedure Initialize (Object : in out Match_Data) is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Initialize unimplemented");
-      raise Program_Error with "Unimplemented procedure Initialize";
-   end Initialize;
 
    ------------
    -- Adjust --
@@ -1028,7 +938,6 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out Match_Data) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Adjust unimplemented");
       raise Program_Error with "Unimplemented procedure Adjust";
    end Adjust;
 
@@ -1038,8 +947,7 @@ package body Pcre.Matcher is
 
    procedure Finalize (Object : in out Match_Data) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Finalize unimplemented");
-      raise Program_Error with "Unimplemented procedure Finalize";
+      pcre2_match_data_free_8 (Object.Impl);
    end Finalize;
 
    ----------------
