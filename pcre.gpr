@@ -33,7 +33,14 @@ project Pcre is
       for Driver ("MarkDown") use "";
       for Driver ("Makefile") use "";
       for Driver ("Sed") use "";
-      for Switches ("Ada") use ("-gnat2020", "-g", "-gnatf", "-fcallgraph-info=su,da", "-fdata-sections", "-ffunction-sections", "-gnatwa", "-gnatyBabcdfhikln");
+      for Switches ("Ada") use ("-gnat2020", 
+                                "-g",
+                                "-gnatf", 
+                                -- "-fcallgraph-info=su,da",
+                                "-fdata-sections", 
+                                "-ffunction-sections",
+                                "-gnatwa",
+                                "-gnatyBabcdfhikln");
    end Compiler;
 
    package Naming is
