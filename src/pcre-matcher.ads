@@ -81,12 +81,12 @@ package Pcre.Matcher is
    --  This function creates and initializes a new compile context.
 
    type Bsr_Type is (ANYCRLF, UNICODE);
-   procedure Set (Arg1 : Compile_Context; Arg2 : Bsr_Type);
+   procedure Set (Context : Compile_Context; Arg2 : Bsr_Type);
    --
    --  This function sets the convention for processing \R within a compile context.
    --  ---------------------------------------------------------------------------------------------
-
-   procedure Set_Character_Tables (Arg1 : Compile_Context; Arg2 : access Character);
+   type Character_Tables is private;
+   procedure Set_Character_Tables (Context : Compile_Context; To : Character_Tables);
    --
    --  This function sets a pointer to custom character tables within a compile context.
    --  The second argument must point to a set of PCRE2 character tables or be NULL to request the default tables.
@@ -161,7 +161,7 @@ package Pcre.Matcher is
    --  ---------------------------------------------------------------------------------------------
 
    type Glob_Separator is new Character with Static_Predicate => Glob_Separator  in '/' | '\' | '.';
-   procedure Set_Glob_Separator (Arg1 : Convert_Context; Arg2 : Glob_Separator);
+   procedure Set_Glob_Separator (Context : Convert_Context; Arg2 : Glob_Separator);
    --
    --  This function is part of an experimental set of pattern conversion functions.
    --  It sets the component separator character that is used when converting globs.
@@ -181,12 +181,12 @@ package Pcre.Matcher is
    ------------------------------------------------------------------------------
 
    procedure Set_Callout
-     (Arg1 : access Match_Context;
+     (Context : access Match_Context;
       Arg2 : access function (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
       Arg3 : System.Address) with Obsolescent;
 
    procedure Set_Substitute_Callout
-     (Arg1 : access Match_Context;
+     (Context : access Match_Context;
       Arg2 : access function (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address) return int;
       Arg3 : System.Address) with Obsolescent;
 
@@ -195,17 +195,17 @@ package Pcre.Matcher is
    --  Sets the backtracking depth limit field in a match context.
    ------------------------------------------------------------------------------
 
-   procedure Set_Heap_Limit (Context : access Match_Context; Arg2 : System.Storage_Elements.Storage_Count);
+   procedure Set_Heap_Limit (Context : access Match_Context; Limit : System.Storage_Elements.Storage_Count);
    --
    --  Sets the backtracking heap limit field in a match context.
    ------------------------------------------------------------------------------
 
-   procedure Set_Match_Limit (Context : access Match_Context; Arg2 : Natural);
+   procedure Set_Match_Limit (Context : access Match_Context; Limit : Natural);
    --
    --  sets the match limit field in a match context.
    ------------------------------------------------------------------------------
 
-   procedure Set_Offset_Limit (Context : access Match_Context; Arg2 : Natural);
+   procedure Set_Offset_Limit (Context : access Match_Context; Limit : Natural);
    --
    --  sets the offset limit field in a match context.
    ------------------------------------------------------------------------------
@@ -336,13 +336,13 @@ package Pcre.Matcher is
    function Get_Startchar (Match_Data : Pcre.Matcher.Match_Data) return unsigned_long;
 
    function Substring_Copy_Byname
-     (Arg1 : Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : Character;
       Arg3 : Character;
       Arg4 : unsigned_long) return int;
 
    function Substring_Copy_Bynumber
-     (Arg1 : access Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : Unsigned;
       Arg3 : access Character;
       Arg4 : access unsigned_long) return int;
@@ -350,24 +350,24 @@ package Pcre.Matcher is
    procedure Substring_Free (Arg1 : access Character);
 
    function Substring_Get_Byname
-     (Arg1 : access Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : access Character;
       Arg3 : System.Address;
       Arg4 : access unsigned_long) return int;
 
    function Substring_Get_Bynumber
-     (Arg1 : access Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : Unsigned;
       Arg3 : System.Address;
       Arg4 : access unsigned_long) return int;
 
    function Substring_Length_Byname
-     (Arg1 : access Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : access Character;
       Arg3 : access unsigned_long) return int;
 
    function Substring_Length_Bynumber
-     (Arg1 : access Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : Unsigned;
       Arg3 : access unsigned_long) return int;
 
@@ -382,7 +382,7 @@ package Pcre.Matcher is
    procedure Substring_List_Free (Arg1 : System.Address);
 
    function Substring_List_Get
-     (Arg1 : access Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : System.Address;
       Arg3 : System.Address) return int ;
 
@@ -409,12 +409,15 @@ package Pcre.Matcher is
       Arg3  : unsigned_long;
       Arg4  : unsigned_long;
       Arg5  : Unsigned;
-      Arg6  : access Match_Data'Class;
+      Match_Data : Pcre.Matcher.Match_Data'Class;
       Arg7  : access Match_Context'Class;
       Arg8  : access Character;
       Arg9  : unsigned_long;
       Arg10 : access Character;
       Arg11 : access unsigned_long);
+
+   --  ===============================================================================================
+   --  ===============================================================================================
 
    procedure Jit_Compile (Arg1 : access Code; Arg2 : Unsigned);
 
@@ -446,9 +449,9 @@ package Pcre.Matcher is
       Arg2 : access Character;
       Arg3 : unsigned_long) return int;
 
-   function Maketables (Arg1 : access General_Context) return access Character;
+   function Maketables (Context :  General_Context) return Character_Tables;
 
-   procedure Maketables_Free (Arg1 : access General_Context; Arg2 : access Character);
+   procedure Maketables_Free (Context :  General_Context; Tables : Character_Tables);
    PCRE_ERROR : exception;
 
 private
@@ -542,6 +545,7 @@ private
    EXTRA_MATCH_LINE              : constant Extra_Options := PCRE2_EXTRA_MATCH_LINE;
    EXTRA_ESCAPED_CR_IS_LF        : constant Extra_Options := PCRE2_EXTRA_ESCAPED_CR_IS_LF;
    EXTRA_ALT_BSUX                : constant Extra_Options := PCRE2_EXTRA_ALT_BSUX;
+   type Character_Tables is access Unsigned_Char;
 
    Null_General_Context : constant General_Context := (Ada.Finalization.Controlled with null);
    Null_Compile_Context : constant Compile_Context := (Ada.Finalization.Controlled with null, null);

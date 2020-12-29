@@ -33,10 +33,10 @@ package body Pcre.Matcher is
 
    Bsr_Type_Maping : constant array (Bsr_Type) of Unsigned := (ANYCRLF => PCRE2_BSR_ANYCRLF,
                                                                UNICODE => PCRE2_BSR_UNICODE);
-   procedure Set (Arg1 : Compile_Context; Arg2 : Bsr_Type)
+   procedure Set (Context : Compile_Context; Arg2 : Bsr_Type)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Bsr_8 (Arg1.Impl, Bsr_Type_Maping (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Bsr_8 (Context.Impl, Bsr_Type_Maping (Arg2)));
    end Set;
 
    --------------------------
@@ -44,11 +44,11 @@ package body Pcre.Matcher is
    --------------------------
 
    procedure Set_Character_Tables
-     (Arg1 : Compile_Context; Arg2 : access Character)
+     (Context : Compile_Context; To : Character_Tables)
    is
-      Data : aliased Unsigned_Char with Address => Arg2.all'Address;
+      Data : aliased Unsigned_Char with Address => To.all'Address;
    begin
-      Retcode_2_Exception (Pcre2_Set_Character_Tables_8 (Arg1.Impl, Data'Access));
+      Retcode_2_Exception (Pcre2_Set_Character_Tables_8 (Context.Impl, To));
    end Set_Character_Tables;
 
    -------------------------------
@@ -140,10 +140,10 @@ package body Pcre.Matcher is
    ------------------------
 
    procedure Set_Glob_Separator
-     (Arg1 : Convert_Context; Arg2 : Glob_Separator)
+     (Context : Convert_Context; Arg2 : Glob_Separator)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Glob_Separator_8 (Arg1.Impl, Glob_Separator'Pos (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Glob_Separator_8 (Context.Impl, Glob_Separator'Pos (Arg2)));
    end Set_Glob_Separator;
 
    ---------------------
@@ -179,10 +179,9 @@ package body Pcre.Matcher is
    -----------------
 
    procedure Set_Callout
-     (Arg1 : access Match_Context;
-      Arg2 : access function
-        (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
-      Arg3 : System.Address)
+     (Context : access Match_Context;
+      Arg2 : access function (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
+      Arg3    : System.Address)
    is
    begin
       raise Program_Error with "Unimplemented procedure Set_Callout";
@@ -193,11 +192,9 @@ package body Pcre.Matcher is
    ----------------------------
 
    procedure Set_Substitute_Callout
-     (Arg1 : access Match_Context;
-      Arg2 : access function
-        (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address)
-      return int;
-      Arg3 : System.Address)
+     (Context : access Match_Context;
+      Arg2 : access function (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address) return int;
+      Arg3    : System.Address)
    is
    begin
       raise Program_Error with "Unimplemented procedure Set_Substitute_Callout";
@@ -216,18 +213,18 @@ package body Pcre.Matcher is
    -- Set_Heap_Limit --
    --------------------
 
-   procedure Set_Heap_Limit (Context : access Match_Context; Arg2 : System.Storage_Elements.Storage_Count) is
+   procedure Set_Heap_Limit (Context : access Match_Context; Limit : System.Storage_Elements.Storage_Count) is
    begin
-      Retcode_2_Exception (Pcre2_Set_Heap_Limit_8 (Context.Impl, Unsigned (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Heap_Limit_8 (Context.Impl, Unsigned (Limit)));
    end Set_Heap_Limit;
 
    ---------------------
    -- Set_Match_Limit --
    ---------------------
 
-   procedure Set_Match_Limit (Context : access Match_Context; Arg2 : Natural) is
+   procedure Set_Match_Limit (Context : access Match_Context; Limit : Natural) is
    begin
-      Retcode_2_Exception (Pcre2_Set_Match_Limit_8 (Context.Impl, Unsigned (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Match_Limit_8 (Context.Impl, Unsigned (Limit)));
    end Set_Match_Limit;
 
    ----------------------
@@ -235,10 +232,10 @@ package body Pcre.Matcher is
    ----------------------
 
    procedure Set_Offset_Limit
-     (Context : access Match_Context; Arg2 : Natural)
+     (Context : access Match_Context; Limit : Natural)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Offset_Limit_8 (Context.Impl, unsigned_long (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Offset_Limit_8 (Context.Impl, unsigned_long (Limit)));
    end Set_Offset_Limit;
 
    -------------------------
@@ -450,10 +447,10 @@ package body Pcre.Matcher is
    ---------------------------
 
    function Substring_Copy_Byname
-     (Arg1 : Match_Data;
+     (Match_Data : Pcre.Matcher.Match_Data;
       Arg2 : Character;
       Arg3 : Character;
-      Arg4 : unsigned_long) return int
+      Arg4       : unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -468,8 +465,10 @@ package body Pcre.Matcher is
    -----------------------------
 
    function Substring_Copy_Bynumber
-     (Arg1 : access Match_Data; Arg2 : Unsigned; Arg3 : access Character;
-      Arg4 : access unsigned_long) return int
+     (Match_Data : Pcre.Matcher.Match_Data;
+      Arg2 : Unsigned;
+      Arg3 : access Character;
+      Arg4       : access unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -495,8 +494,10 @@ package body Pcre.Matcher is
    --------------------------
 
    function Substring_Get_Byname
-     (Arg1 : access Match_Data; Arg2 : access Character; Arg3 : System.Address;
-      Arg4 : access unsigned_long) return int
+     (Match_Data : Pcre.Matcher.Match_Data;
+      Arg2 : access Character;
+      Arg3 : System.Address;
+      Arg4       : access unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -510,8 +511,10 @@ package body Pcre.Matcher is
    ----------------------------
 
    function Substring_Get_Bynumber
-     (Arg1 : access Match_Data; Arg2 : Unsigned; Arg3 : System.Address;
-      Arg4 : access unsigned_long) return int
+     (Match_Data : Pcre.Matcher.Match_Data;
+      Arg2 : Unsigned;
+      Arg3 : System.Address;
+      Arg4       : access unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -526,8 +529,9 @@ package body Pcre.Matcher is
    -----------------------------
 
    function Substring_Length_Byname
-     (Arg1 : access Match_Data; Arg2 : access Character;
-      Arg3 : access unsigned_long) return int
+     (Match_Data : Pcre.Matcher.Match_Data;
+      Arg2 : access Character;
+      Arg3       : access unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -542,8 +546,9 @@ package body Pcre.Matcher is
    -------------------------------
 
    function Substring_Length_Bynumber
-     (Arg1 : access Match_Data; Arg2 : Unsigned; Arg3 : access unsigned_long)
-      return int
+     (Match_Data : Pcre.Matcher.Match_Data;
+      Arg2 : Unsigned;
+      Arg3       : access unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -600,8 +605,9 @@ package body Pcre.Matcher is
    ------------------------
 
    function Substring_List_Get
-     (Arg1 : access Match_Data; Arg2 : System.Address; Arg3 : System.Address)
-      return int
+     (Match_Data : Pcre.Matcher.Match_Data;
+      Arg2 : System.Address;
+      Arg3       : System.Address) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -670,11 +676,17 @@ package body Pcre.Matcher is
    ----------------
 
    procedure Substitute
-     (Arg1  : access constant Code; Arg2 : access Character;
-      Arg3  : unsigned_long; Arg4 : unsigned_long; Arg5 : Unsigned;
-      Arg6  : access Match_Data'Class; Arg7 : access Match_Context'Class;
-      Arg8  : access Character; Arg9 : unsigned_long; Arg10 : access Character;
-      Arg11 : access unsigned_long)
+     (Arg1  : access constant Code;
+      Arg2  : access Character;
+      Arg3  : unsigned_long;
+      Arg4  : unsigned_long;
+      Arg5  : Unsigned;
+      Match_Data : Pcre.Matcher.Match_Data'Class;
+      Arg7  : access Match_Context'Class;
+      Arg8  : access Character;
+      Arg9  : unsigned_long;
+      Arg10 : access Character;
+      Arg11      : access unsigned_long)
    is
    begin
       pragma Compile_Time_Warning (Standard.True, "Substitute unimplemented");
@@ -775,7 +787,7 @@ package body Pcre.Matcher is
    -- Maketables --
    ----------------
 
-   function Maketables (Arg1 : access General_Context) return access Character
+   function Maketables (Context :  General_Context) return Character_Tables
    is
    begin
       pragma Compile_Time_Warning (Standard.True, "Maketables unimplemented");
@@ -787,7 +799,7 @@ package body Pcre.Matcher is
    ---------------------
 
    procedure Maketables_Free
-     (Arg1 : access General_Context; Arg2 : access Character)
+     (Context :  General_Context; Tables : Character_Tables)
    is
    begin
       pragma Compile_Time_Warning
