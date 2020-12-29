@@ -2,20 +2,17 @@
 --  *           PCRE2 DEMONSTRATION PROGRAM          *
 --  *************************************************/
 --
---  /* This is a demonstration program to illustrate a straightforward way of
---  using the PCRE2 regular expression library from a C program. See the
---  pcre2sample documentation for a short discussion ("man pcre2sample" if you have
---  the PCRE2 man pages installed). PCRE2 is a revised API for the library, and is
---  incompatible with the original PCRE API.
+--  This is a demonstration program to illustrate a straightforward way of using the
+--  PCRE2 regular expression library from an Ada program. See the pcre2sample documentation for a short discussion
+--  ("man pcre2sample" if you have the PCRE2 man pages installed).
+--  PCRE2 is a revised API for the library, and is incompatible with the original PCRE API.
 --
---  There are actually three libraries, each supporting a different code unit
---  width. This demonstration program uses the 8-bit library. The default is to
---  process each code unit as a separate character, but if the pattern begins with
---  "(*UTF)", both it and the subject are treated as UTF-8 strings, where
---  characters may occupy multiple code units.
+--  There are actually three libraries, each supporting a different code unit width.
+--  This demonstration program uses the 8-bit library.
+--  The default is to process each code unit as a separate character, but if the pattern begins with "(*UTF)",
+--  both it and the subject are treated as UTF-8 strings, where characters may occupy multiple code units.
 --
---  In Unix-like environments, if PCRE2 is installed in your standard system
---  libraries, you should be able to compile this program using this command:
+--  In Unix-like environments, if PCRE2 is installed in your standard system libraries, you should be able to compile this program using this command:
 --
 --  cc -Wall pcre2demo.c -lpcre2-8 -o pcre2demo
 --
@@ -50,14 +47,7 @@
 --  string-handling functions such as strcmp() and printf() work with 16-bit
 --  characters, the code for handling the table of named substrings will still need
 --  to be modified. */
---
---  #define PCRE2_CODE_UNIT_WIDTH 8
---
---  #include <stdio.h>
---  #include <string.h>
---  #include <pcre2.h>
---
---
+
 --  /**************************************************************************
 --  * Here is the program. The API includes the concept of "contexts" for     *
 --  * setting up unusual interface requirements for compiling and matching,   *
@@ -71,10 +61,10 @@ with Interfaces.C;
 with Ada.Exceptions;
 with Ada.Text_Io;
 with Gnat.Traceback.Symbolic;
+with Ada.Text_IO; use Ada.Text_IO;
 procedure Pcre2demo is
 --  int main(int argc, char **argv)
 --  {
-   Re : Pcre.Matcher.Code;
    --  PCRE2_SPTR pattern;     /* PCRE2_SPTR is a pointer to unsigned code units of */
    --  PCRE2_SPTR subject;     /* the appropriate width (in this case, 8 bits). */
    --  PCRE2_SPTR name_table;
@@ -86,7 +76,7 @@ procedure Pcre2demo is
    --  int rc;
    --  int utf8;
    --
-   --  uint32_t option_bits;
+   --  uint32_t option_bits
    --  uint32_t namecount;
    --  uint32_t name_entry_size;
    --  uint32_t newline;
@@ -95,83 +85,32 @@ procedure Pcre2demo is
    --  PCRE2_SIZE *ovector;
    --  PCRE2_SIZE subject_length;
    --
-   Match_Data : Pcre.Matcher.Match_Data;
-   Ret        : Interfaces.C.int;
-   Arg1       : constant String := ".*?(/d+)";
-   -- Arg1       : constant String := Ada.Command_Line.Argument (1);
-   Arg2       : constant String := "Bullen 123.672";
-   -- Arg2       : constant String := Ada.Command_Line.Argument (2);
+   Match_Data    : Pcre.Matcher.Match_Data;
+   Ret           : Interfaces.C.int;
+   Pattern       : constant String := (if Ada.Command_Line.Argument_Count >= 1 then Ada.Command_Line.Argument (1) else "(\w+) (\d+.\d+)");
+   Subject       : constant String := (if Ada.Command_Line.Argument_Count >= 2 then Ada.Command_Line.Argument (2) else "Bullen 123.672");
+   Find_All      : constant Boolean := (Ada.Command_Line.Argument_Count >= 3);
 begin
-   --  /**************************************************************************
-   --  * First, sort out the command line. There is only one possible option at  *
-   --  * the moment, "-g" to request repeated matching to find all occurrences,  *
-   --  * like Perl's /g option. We set the variable find_all to a non-zero value *
-   --  * if the -g option is present.                                            *
-   --  **************************************************************************/
-   --
-   --  find_all = 0;
-   --  for (i = 1; i < argc; i++)
-   --    {
-   --    if (strcmp(argv[i], "-g") == 0) find_all = 1;
-   --    else if (argv[i][0] == '-')
-   --      {
-   --      printf("Unrecognised option %s\n", argv[i]);
-   --      return 1;
-   --      }
-   --    else break;
-   --    }
-   --
-   --  /* After the options, we require exactly two arguments, which are the pattern,
-   --  and the subject string. */
-   --
-   --  if (argc - i != 2)
-   --    {
-   --    printf("Exactly two arguments required: a regex and a subject string\n");
-   --    return 1;
-   --    }
-   --
-   --  /* Pattern and subject are char arguments, so they can be straightforwardly
-   --  cast to PCRE2_SPTR because we are working in 8-bit code units. The subject
-   --  length is cast to PCRE2_SIZE for completeness, though PCRE2_SIZE is in fact
-   --  defined to be size_t. */
-   --
-   --  pattern = (PCRE2_SPTR)argv[i];
-   --  subject = (PCRE2_SPTR)argv[i+1];
-   --  subject_length = (PCRE2_SIZE)strlen((char *)subject);
-   --
 
-   Re := Pcre.Matcher.Compile (Arg1);
-   --  /* Compilation failed: print the error message and exit. */
-   --
+   Re := Pcre.Matcher.Compile (pattern);
+   --  If the compilation succeeded, we call PCRE2 again, in order to do a pattern match against the subject string.
+   --  This does just ONE match. If further matching is needed, it will be done below.
+   --  Before running the match we must set up a match_data block for holding the result.
+   --  Using pcre2_match_data_create_from_pattern() ensures that the block is
+   --  exactly the right size for the number of capturing parentheses in the
+   --  pattern. If you need to know the actual size of a match_data block as
+   --  a number of bytes, you can find it like this:
 
+   Match_Data.Initialize (Re);
+   Match_Data.Finalize;
    --
-   --
-   --  /*************************************************************************
-   --  * If the compilation succeeded, we call PCRE2 again, in order to do a    *
-   --  * pattern match against the subject string. This does just ONE match. If *
-   --  * further matching is needed, it will be done below. Before running the  *
-   --  * match we must set up a match_data block for holding the result. Using  *
-   --  * pcre2_match_data_create_from_pattern() ensures that the block is       *
-   --  * exactly the right size for the number of capturing parentheses in the  *
-   --  * pattern. If you need to know the actual size of a match_data block as  *
-   --  * a number of bytes, you can find it like this:                          *
-   --  *                                                                        *
-   --  * PCRE2_SIZE match_data_size = pcre2_get_match_data_size(match_data);    *
-   --  *************************************************************************/
-   --
-   Match_Data := Pcre.Matcher.Create (Re);
-   --
-   --  /* Now run the match. */
-   Ret := Re.Match (Arg2, Match_Data => Match_Data);
-   --  rc = pcre2_match(
-   --    re,                   /* the compiled pattern */
-   --    subject,              /* the subject string */
-   --    subject_length,       /* the length of the subject */
-   --    0,                    /* start at offset 0 in the subject */
-   --    0,                    /* default options */
-   --    match_data,           /* block for storing the result */
-   --    NULL);                /* use default match context */
-   --
+   --  Now run the match.
+   Ret := Re.Match (Subject, Match_Data => Match_Data);
+   Put_Line (Ret'Img);
+   Put_Line (Match_Data.Substring (0));
+   Put_Line (Match_Data.Substring (1));
+   Put_Line (Match_Data.Substring (2));
+
    --  /* Matching failed: handle error cases */
    --
    --  if (rc < 0)
@@ -189,8 +128,7 @@ begin
    --    return 1;
    --    }
    --
-   --  /* Match succeded. Get a pointer to the output vector, where string offsets are
-   --  stored. */
+   --   Match succeded. Get a pointer to the output vector, where string offsets are stored.
    --
    --  ovector = pcre2_get_ovector_pointer(match_data);
    --  printf("Match succeeded at offset %d\n", (int)ovector[0]);
@@ -475,14 +413,8 @@ begin
    --        }
    --      }
    --    }      /* End of loop to find second and subsequent matches */
-   --
-   --  printf("\n");
-   --  pcre2_match_data_free(match_data);
-   --  pcre2_code_free(re);
-   --  return 0;
    --  }
-   --
-   --  /* End of pcre2demo.c */
+
 exception
    when E : others =>
       Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Information (E));

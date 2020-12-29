@@ -19,3 +19,4 @@ messages.txt
 clang_ref_cache.db
 .messages.txt
 .clangd
+*.pyc
