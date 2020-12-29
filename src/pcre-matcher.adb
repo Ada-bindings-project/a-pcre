@@ -109,7 +109,6 @@ package body Pcre.Matcher is
    -- Set_Compile_Recursion_Guard --
    ---------------------------------
    function Compile_Recursion_Guard (Arg1 : Unsigned; Arg2 : System.Address) return int is
-      Me : Compile_Context with Address => Arg2, Import => True;
    begin
       return 0;
    end;
