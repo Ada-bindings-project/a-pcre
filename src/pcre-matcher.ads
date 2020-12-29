@@ -6,7 +6,6 @@ with System.Storage_Elements;
 private with Pcre.Low_Level.Pcre2_H;
 package Pcre.Matcher is
 
-
    type General_Context is tagged private;
    Null_General_Context : constant General_Context;
 
@@ -17,10 +16,12 @@ package Pcre.Matcher is
    Null_Match_Context : constant Match_Context;
 
    type Convert_Context (<>) is tagged private;
+   Null_Convert_Context : constant Convert_Context;
 
    type Code is tagged private;
 
    type Match_Data is tagged private;
+   procedure Finalize   (Object : in out Match_Data);
 
 
    type Jit_Stack is tagged private;
@@ -75,38 +76,31 @@ package Pcre.Matcher is
 
    function Config (Arg1 : Unsigned; Arg2 : System.Address) return int;
 
-   ---------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Create (From : General_Context'Class := Null_General_Context) return Compile_Context;
    --  This function creates and initializes a new compile context.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    type Bsr_Type is (ANYCRLF, UNICODE);
    procedure Set (Context : Compile_Context; Arg2 : Bsr_Type);
    --
    --  This function sets the convention for processing \R within a compile context.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
    type Character_Tables is private;
    procedure Set_Character_Tables (Context : Compile_Context; To : Character_Tables);
    --
    --  This function sets a pointer to custom character tables within a compile context.
    --  The second argument must point to a set of PCRE2 character tables or be NULL to request the default tables.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
 
-   type Extra_Options is private;
-   function "+" (L, R : Extra_Options) return Extra_Options;
-   EXTRA_ALLOW_SURROGATE_ESCAPES : constant Extra_Options;
-   EXTRA_BAD_ESCAPE_IS_LITERAL   : constant Extra_Options;
-   EXTRA_MATCH_WORD              : constant Extra_Options;
-   EXTRA_MATCH_LINE              : constant Extra_Options;
-   EXTRA_ESCAPED_CR_IS_LF        : constant Extra_Options;
-   EXTRA_ALT_BSUX                : constant Extra_Options;
 
    procedure Set_Compile_Extra_Options (Arg1 : Compile_Context; Arg2 : Extra_Options);
    --
    --  This function sets additional option bits for compile() that are housed in a compile context.
    --  It completely replaces all the bits.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Max_Pattern_Length (Arg1 : Compile_Context; Arg2 : Natural);
    --
@@ -114,7 +108,7 @@ package Pcre.Matcher is
    --   of the pattern that can be compiled.
    --  If a longer pattern is passed to compile there is an immediate error return.
    --  The default is effectively unlimited, being the largest value a PCRE2_SIZE variable can hold.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    type NEW_LINE_TYPE is (Cr,      --  Carriage return only
                           Lf,      --  Linefeed only
@@ -126,12 +120,12 @@ package Pcre.Matcher is
    --
    --  This function sets the newline convention within a compile context.
    --  This specifies which character(s) are recognized as newlines when compiling and matching patterns.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Parens_Nest_Limit (Context : Compile_Context; Arg2 : Positive);
    --
    --  This function sets, in a compile context, the maximum depth of nested parentheses in a pattern.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    type Recursion_Guard_Interface is limited interface;
    type Recursion_Guard_Interface_Access is access all Recursion_Guard_Interface'Class;
@@ -149,25 +143,25 @@ package Pcre.Matcher is
    --  The callout function should return zero if all is well, or non-zero to force an error.
    --  This feature is provided so that applications can check the available system stack space,
    --  in order to avoid running out.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
 
-   procedure Set_Glob_Escape (Context : Convert_Context; Arg2 : Character);
+   procedure Set_Glob_Escape (Context : Convert_Context; Escape_Character : Character);
    --
    --  This function is part of an experimental set of pattern conversion functions.
    --  It sets the escape character that is used when converting globs.
    --  The second argument must either be NUL (meaning there is no escape character) or a punctuation character.
    --  The default is grave accent if running under Windows, otherwise backslash.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    type Glob_Separator is new Character with Static_Predicate => Glob_Separator  in '/' | '\' | '.';
-   procedure Set_Glob_Separator (Context : Convert_Context; Arg2 : Glob_Separator);
+   procedure Set_Glob_Separator (Context : Convert_Context; Separator : Glob_Separator);
    --
    --  This function is part of an experimental set of pattern conversion functions.
    --  It sets the component separator character that is used when converting globs.
    --  The second argument must be one of the characters forward slash, backslash, or dot.
    --  The default is backslash when running under Windows, otherwise forward slash.
-   --  ---------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Pattern_Convert
      (Pattern   : String;
@@ -178,77 +172,49 @@ package Pcre.Matcher is
 
    procedure Converted_Pattern_Free (Arg1 : access Character) with Obsolescent;
    --
-   ------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Callout
      (Context : access Match_Context;
-      Arg2 : access function (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
-      Arg3 : System.Address) with Obsolescent;
+      Arg2    : access function (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
+      Arg3    : System.Address) with Obsolescent;
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Substitute_Callout
      (Context : access Match_Context;
-      Arg2 : access function (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address) return int;
-      Arg3 : System.Address) with Obsolescent;
+      Arg2    : access function (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address) return int;
+      Arg3    : System.Address) with Obsolescent;
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Depth_Limit (Arg1 : Match_Context; Arg2 : Natural);
    --
    --  Sets the backtracking depth limit field in a match context.
-   ------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Heap_Limit (Context : access Match_Context; Limit : System.Storage_Elements.Storage_Count);
    --
    --  Sets the backtracking heap limit field in a match context.
-   ------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Match_Limit (Context : access Match_Context; Limit : Natural);
    --
    --  sets the match limit field in a match context.
-   ------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Offset_Limit (Context : access Match_Context; Limit : Natural);
    --
    --  sets the offset limit field in a match context.
-   ------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Recursion_Memory_Management
      (Context : access Match_Context;
-      Arg2 : access function (Arg1 : unsigned_long; Arg2 : System.Address) return System.Address;
-      Arg3 : access procedure (Arg1 : System.Address; Arg2 : System.Address);
-      Arg4 : System.Address);
+      Arg2    : access function (Arg1 : unsigned_long; Arg2 : System.Address) return System.Address;
+      Arg3    : access procedure (Arg1 : System.Address; Arg2 : System.Address);
+      Arg4    : System.Address);
 
-   -----------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
-   type Compile_Options is private;
-   Null_Compile_Options : constant Compile_Options;
-   ANCHORED           : constant Compile_Options ; -- Force pattern anchoring
-   ALLOW_EMPTY_CLASS  : constant Compile_Options ; -- Allow empty classes
-   ALT_BSUX           : constant Compile_Options ; -- Alternative handling of \u, \U, and \x
-   ALT_CIRCUMFLEX     : constant Compile_Options ; -- Alternative handling of ^ in multiline mode
-   ALT_VERBNAMES      : constant Compile_Options ; -- Process backslashes in verb names
-   AUTO_CALLOUT       : constant Compile_Options ; -- Compile automatic callouts
-   CASELESS           : constant Compile_Options ; -- Do caseless matching
-   DOLLAR_ENDONLY     : constant Compile_Options ; -- $ not to match newline at end
-   DOTALL             : constant Compile_Options ; -- . matches anything including NL
-   DUPNAMES           : constant Compile_Options ; -- Allow duplicate names for subpatterns
-   ENDANCHORED        : constant Compile_Options ; -- Pattern can match only at end of subject
-   EXTENDED           : constant Compile_Options ; -- Ignore white space and # comments
-   FIRSTLINE          : constant Compile_Options ; -- Force matching to be before newline
-   LITERAL            : constant Compile_Options ; -- Pattern characters are all literal
-   MATCH_INVALID_UTF  : constant Compile_Options ; -- Enable support for matching invalid UTF
-   MATCH_UNSET_BACKREF  : constant Compile_Options ; -- Match unset backreferences
-   MULTILINE          : constant Compile_Options ; -- ^ and $ match newlines within data
-   NEVER_BACKSLASH_C  : constant Compile_Options ; -- Lock out the use of \C in patterns
-   NEVER_UCP          : constant Compile_Options ; -- Lock out UCP, e.g. via (*UCP)
-   NEVER_UTF          : constant Compile_Options ; -- Lock out UTF, e.g. via (*UTF)
-   NO_AUTO_CAPTURE    : constant Compile_Options ; -- Disable numbered capturing paren-theses (named ones available)
-   NO_AUTO_POSSESS    : constant Compile_Options ; -- Disable auto-possessification
-   NO_DOTSTAR_ANCHOR  : constant Compile_Options ; -- Disable automatic anchoring for .*
-   NO_START_OPTIMIZE  : constant Compile_Options ; -- Disable match-time start optimizations
-   NO_UTF_CHECK       : constant Compile_Options ; -- Do not check the pattern for UTF validity (only relevant if UTF is set)
-   UCP                : constant Compile_Options ; -- Use Unicode properties for \d, \w, etc.
-   UNGREEDY           : constant Compile_Options ; -- Invert greediness of quantifiers
-   USE_OFFSET_LIMIT   : constant Compile_Options ; -- Enable offset limit for unanchored matching
-   UTF                : constant Compile_Options ; -- Treat pattern and subjects as UTF strings
+
    function Compile
      (Pattern : String;           --  A string containing expression to be compiled
       Options : Compile_Options := Null_Compile_Options;
@@ -257,7 +223,7 @@ package Pcre.Matcher is
    --  The length of the pattern and any error offset that is returned are in code units, not characters.
    --  A compile context is needed only if you want to provide custom memory allocation functions,
    --  or to provide an external function for system stack size checking, or to change one or more of these parameters.
-   ---------------------------------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Pattern_Info
      (Arg1 : Code;
@@ -271,16 +237,22 @@ package Pcre.Matcher is
 
    function Create (Size    : Positive;
                     Context : General_Context'Class := Null_General_Context) return Match_Data;
+   procedure Initialize (Match_Data : in out Pcre.Matcher.Match_Data;
+                         Size       : Positive;
+                         Context    : General_Context'Class := Null_General_Context);
    --
    --  Creates a new match data block, which is used for holding the result of a match.
    --  The first argument specifies the number of pairs of offsets that are required.
    --  These form the "output vector" (ovector) within the match data block,
    --  and are used to identify the matched string and any captured substrings.
    --  There is always one pair of offsets; if ovecsize is zero, it is treated as one.
-   ---------------------------------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Create (Code    : Pcre.Matcher.Code'Class;
                     Context : General_Context'Class := Null_General_Context) return Match_Data;
+   procedure Initialize (Match_Data : in out Pcre.Matcher.Match_Data;
+                         Code       : Pcre.Matcher.Code'Class;
+                         Context    : General_Context'Class := Null_General_Context);
    --
    --  This function creates a new match data block, which is used for holding the result of a match.
    --  The first argument points to a compiled pattern.
@@ -288,24 +260,8 @@ package Pcre.Matcher is
    --  that are required in the match data block.
    --  These form the "output vector" (ovector) within the match data block,
    --  and are used to identify the matched string and any captured substrings
-   ---------------------------------------------------------------------------------------------------------------------
+   --  -------------------------------------------------------------------------------------------------------------------------
 
-   type Match_Options is private;
-
-   Null_Match_Options         : constant Match_Options;
-   Match_ANCHORED             : constant Match_Options; --  Match only at the first position
-   Match_COPY_MATCHED_SUBJECT : constant Match_Options; --  On success, make a private subject copy
-   Match_ENDANCHORED          : constant Match_Options; --  Pattern can match only at end of subject
-   Match_NOTBOL               : constant Match_Options; --  Subject string is not the beginning of a line
-   Match_NOTEOL               : constant Match_Options; --  Subject string is not the end of a line
-   Match_NOTEMPTY             : constant Match_Options; --  An empty string is not a valid match
-   Match_NOTEMPTY_ATSTART     : constant Match_Options; --  An empty string at the start of the subject is not a valid match
-   Match_NO_JIT               : constant Match_Options; --  Do not use JIT matching
-   Match_NO_UTF_CHECK         : constant Match_Options; --  Do not check the subject for UTF validity (only relevant if UTF was set at compile time)
-   Match_PARTIAL_HARD         : constant Match_Options; --  Return ERROR_PARTIAL for a partial match even if there is a full match
-   Match_PARTIAL_SOFT         : constant Match_Options; --  Return ERROR_PARTIAL for a partial match if no full matches are found
-
-   function "+" (L, R : Match_Options) return Match_Options;
    type Workspace_Type (Size : Natural)is private;
    function Dfa_Match
      (Code        : Pcre.Matcher.Code;
@@ -314,77 +270,127 @@ package Pcre.Matcher is
       Options     : Match_Options;
       Match_Data  : out Pcre.Matcher.Match_Data'Class;
       Context     : Pcre.Matcher.Match_Context'Class := Null_Match_Context;
-      workspace   : Workspace_Type) return int;
+      Workspace   : Workspace_Type) return int;
+   --
+   --  Matches a compiled regular expression against a given subject string,
+   --  using an alternative matching algorithm that scans the subject string just once
+   --   (except when processing lookaround assertions).
+   --  This function is not Perl-compatible (the Perl-compatible matching function is match)
+   --  matches a compiled regular expression against a given subject string,
+   --  using an alternative matching algorithm that scans the subject string just once
+   --    (except when processing lookaround assertions).
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Match
-     (Code        : Pcre.Matcher.Code;
+     (Code        : Pcre.Matcher.Code; -- the compiled pattern
       Subject     : String;
       Startoffset : Natural := 0;
       Options     : Match_Options := Null_Match_Options;
-      Match_Data  : out Pcre.Matcher.Match_Data'Class;
-      Context     : Match_Context'Class := Null_Match_Context) return int;
-
+      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Context     : Match_Context'Class := Null_Match_Context) return Integer;
+   --
+   --  Matches a compiled regular expression against a given subject string,
+   --   using a matching algorithm that is similar to Perl's.
+   --  It returns offsets to what it has matched and to captured substrings via the match_data block,
+   --   which can be processed by functions with names that start with get_ovector_... or substring_....
+   --  The return from match  is one more than the highest numbered capturing pair that has been set
+   --   (for example, 1 if there are no captures), zero if the vector of offsets is too small,
+   --   or a negative error code for no match and other errors
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Get_Mark (Match_Data : Pcre.Matcher.Match_Data) return access Character;
+   --
+   --  After a call of match that was passed the match block that is this function's argument,
+   --  this function returns a pointer to the last (*MARK), (*PRUNE), or (*THEN) name that was encountered during the matching process.
+   --  The name is zero-terminated, and is within the compiled pattern.
+   --  The length of the name is in the preceding code unit.
+   --  If no name is available, NULL is returned.
+   --  After a successful match, the name that is returned is the last one on the matching path.
+   --  After a failed match or a partial match, the last encountered name is returned.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Get_Match_Data_Size (Match_Data : Pcre.Matcher.Match_Data) return Natural;
+   function Get_Size (Match_Data : Pcre.Matcher.Match_Data) return Natural;
+   --
+   --  Returns the size, in bytes, of the match data block that is its argument.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Get_Ovector_Count (Match_Data : Pcre.Matcher.Match_Data) return Natural;
+   --
+   --  Returns the number of pairs of offsets in the ovector that forms part of the given match data block
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Get_Ovector_Pointer (Match_Data : Pcre.Matcher.Match_Data) return access unsigned_long;
+   --
+   --  Returns a pointer to the vector of offsets that forms part of the given match data block.
+   --  The number of pairs can be found by calling pcre2_get_ovector_count().
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Get_Startchar (Match_Data : Pcre.Matcher.Match_Data) return unsigned_long;
+   --
+   --  After a successful call of pcre2_match() that was passed the match block that is this function's argument,
+   --  this function returns the code unit offset of the character at which the successful match started.
+   --  For a non-partial match, this can be different to the value of ovector[0]
+   --  if the pattern contains the \K escape sequence. After a partial match, however,
+   --  this value is always the same as ovector[0] because \K does not affect the result of a partial match.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Substring_Copy_Byname
+   procedure Substring
      (Match_Data : Pcre.Matcher.Match_Data;
-      Arg2 : Character;
-      Arg3 : Character;
-      Arg4 : unsigned_long) return int;
+      Name       : String;
+      Buffer     : out String;
+      Last       : out Natural);
 
-   function Substring_Copy_Bynumber
+   function Substring
      (Match_Data : Pcre.Matcher.Match_Data;
-      Arg2 : Unsigned;
-      Arg3 : access Character;
-      Arg4 : access unsigned_long) return int;
+      Name       : String) return String;
 
-   procedure Substring_Free (Arg1 : access Character);
-
-   function Substring_Get_Byname
+   procedure Substring
      (Match_Data : Pcre.Matcher.Match_Data;
-      Arg2 : access Character;
-      Arg3 : System.Address;
-      Arg4 : access unsigned_long) return int;
+      Number     : Natural;
+      Buffer     : out String;
+      Last       : out Natural);
 
-   function Substring_Get_Bynumber
+   function Substring
      (Match_Data : Pcre.Matcher.Match_Data;
-      Arg2 : Unsigned;
-      Arg3 : System.Address;
-      Arg4 : access unsigned_long) return int;
+      Number     : Natural) return String;
+   --
+   --  This is a convenience function for extracting a captured substring into a given buffer.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Substring_Length_Byname
+   function Substring_Length
      (Match_Data : Pcre.Matcher.Match_Data;
-      Arg2 : access Character;
-      Arg3 : access unsigned_long) return int;
+      Name       : String) return Natural;
+   --  returns the length of a matched substring, identified by name.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Substring_Length_Bynumber
+   function Substring_Length
      (Match_Data : Pcre.Matcher.Match_Data;
-      Arg2 : Unsigned;
-      Arg3 : access unsigned_long) return int;
+      Number     : Natural) return Natural;
+   --  returns the length of a matched substring, identified by number.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    function Substring_Nametable_Scan
-     (Arg1 : access constant Code;
-      Arg2 : access Character;
-      Arg3 : System.Address;
-      Arg4 : System.Address) return int;
+     (Code  : Pcre.Matcher.Code;
+      Name  : String;
+      First : System.Address;
+      Last  : System.Address) return int;
 
-   function Substring_Number_From_Name (Arg1 : access constant Code; Arg2 : access Character) return int ;
+   function Number_From_Name (Code  : Pcre.Matcher.Code; Name  : String) return Natural;
+   --  This convenience function finds the number of a named substring capturing parenthesis in a compiled pattern,
+   --  provided that it is a unique name.
+   --  The yield of the function is the number of the parenthesis if the name is found,
+   --   or raises ERROR_NOSUBSTRING if it is not found.
+   --   When duplicate names are allowed (DUPNAMES is set),
+   --  if the name is not  unique, ERROR_NOUNIQUESUBSTRING is raised.
+   --   You can obtain the list of numbers with the same name by calling substring_nametable_scan.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Substring_List_Free (Arg1 : System.Address);
 
    function Substring_List_Get
      (Match_Data : Pcre.Matcher.Match_Data;
-      Arg2 : System.Address;
-      Arg3 : System.Address) return int ;
+      Arg2       : System.Address;
+      Arg3       : System.Address) return int;
 
    function Serialize_Encode
      (Arg1 : System.Address;
@@ -397,24 +403,24 @@ package Pcre.Matcher is
      (Arg1 : System.Address;
       Arg2 : int;
       Arg3 : access Character;
-      Arg4 : access General_Context) return int ;
+      Arg4 : access General_Context) return int;
 
    function Serialize_Get_Number_Of_Codes (Arg1 : access Character) return int;
 
    procedure Serialize_Free (Arg1 : access Character);
 
    procedure Substitute
-     (Arg1  : access constant Code;
-      Arg2  : access Character;
-      Arg3  : unsigned_long;
-      Arg4  : unsigned_long;
-      Arg5  : Unsigned;
+     (Arg1       : access constant Code;
+      Arg2       : access Character;
+      Arg3       : unsigned_long;
+      Arg4       : unsigned_long;
+      Arg5       : Unsigned;
       Match_Data : Pcre.Matcher.Match_Data'Class;
-      Arg7  : access Match_Context'Class;
-      Arg8  : access Character;
-      Arg9  : unsigned_long;
-      Arg10 : access Character;
-      Arg11 : access unsigned_long);
+      Arg7       : access Match_Context'Class;
+      Arg8       : access Character;
+      Arg9       : unsigned_long;
+      Arg10      : access Character;
+      Arg11      : access unsigned_long);
 
    --  ===============================================================================================
    --  ===============================================================================================
@@ -428,7 +434,7 @@ package Pcre.Matcher is
       Arg4 : unsigned_long;
       Arg5 : Unsigned;
       Arg6 : access Match_Data'Class;
-      Arg7 : access Match_Context'Class) return int ;
+      Arg7 : access Match_Context'Class) return int;
 
    procedure Jit_Free_Unused_Memory (Arg1 : access General_Context);
 
@@ -496,7 +502,6 @@ private
       Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Match_Data_8;
    end record;
    procedure Adjust     (Object : in out Match_Data);
-   procedure Finalize   (Object : in out Match_Data);
 
 
    type Jit_Stack is  new Ada.Finalization.Controlled with record
@@ -506,64 +511,15 @@ private
    procedure Adjust     (Object : in out Jit_Stack);
    procedure Finalize   (Object : in out Jit_Stack);
 
-   type Compile_Options is new Unsigned;
-   ANCHORED           : constant Compile_Options := PCRE2_ANCHORED; -- Force pattern anchoring
-   ALLOW_EMPTY_CLASS  : constant Compile_Options := PCRE2_ALLOW_EMPTY_CLASS ; -- Allow empty classes
-   ALT_BSUX           : constant Compile_Options := PCRE2_ALT_BSUX ; -- Alternative handling of \u, \U, and \x
-   ALT_CIRCUMFLEX     : constant Compile_Options := PCRE2_ALT_CIRCUMFLEX ; -- Alternative handling of ^ in multiline mode
-   ALT_VERBNAMES      : constant Compile_Options := PCRE2_ALT_VERBNAMES ; -- Process backslashes in verb names
-   AUTO_CALLOUT       : constant Compile_Options := PCRE2_AUTO_CALLOUT ; -- Compile automatic callouts
-   CASELESS           : constant Compile_Options := PCRE2_CASELESS ; -- Do caseless matching
-   DOLLAR_ENDONLY     : constant Compile_Options := PCRE2_DOLLAR_ENDONLY ; -- $ not to match newline at end
-   DOTALL             : constant Compile_Options := PCRE2_DOTALL ; -- . matches anything including NL
-   DUPNAMES           : constant Compile_Options := PCRE2_DUPNAMES ; -- Allow duplicate names for subpatterns
-   ENDANCHORED        : constant Compile_Options := PCRE2_ENDANCHORED; -- Pattern can match only at end of subject
-   EXTENDED           : constant Compile_Options := PCRE2_EXTENDED ; -- Ignore white space and # comments
-   FIRSTLINE          : constant Compile_Options := PCRE2_FIRSTLINE; -- Force matching to be before newline
-   LITERAL            : constant Compile_Options := PCRE2_LITERAL ; -- Pattern characters are all literal
-   MATCH_INVALID_UTF  : constant Compile_Options := PCRE2_MATCH_INVALID_UTF ; -- Enable support for matching invalid UTF
-   MATCH_UNSET_BACKREF  : constant Compile_Options := PCRE2_MATCH_UNSET_BACKREF ; -- Match unset backreferences
-   MULTILINE          : constant Compile_Options := PCRE2_MULTILINE ; -- ^ and $ match newlines within data
-   NEVER_BACKSLASH_C  : constant Compile_Options := PCRE2_NEVER_BACKSLASH_C ; -- Lock out the use of \C in patterns
-   NEVER_UCP          : constant Compile_Options := PCRE2_NEVER_UCP ; -- Lock out UCP, e.g. via (*UCP)
-   NEVER_UTF          : constant Compile_Options := PCRE2_NEVER_UTF ; -- Lock out UTF, e.g. via (*UTF)
-   NO_AUTO_CAPTURE    : constant Compile_Options := PCRE2_NO_AUTO_CAPTURE ; -- Disable numbered capturing paren-theses (named ones available)
-   NO_AUTO_POSSESS    : constant Compile_Options := PCRE2_NO_AUTO_POSSESS ; -- Disable auto-possessification
-   NO_DOTSTAR_ANCHOR  : constant Compile_Options := PCRE2_NO_DOTSTAR_ANCHOR ; -- Disable automatic anchoring for .*
-   NO_START_OPTIMIZE  : constant Compile_Options := PCRE2_NO_START_OPTIMIZE ; -- Disable match-time start optimizations
-   NO_UTF_CHECK       : constant Compile_Options := PCRE2_NO_UTF_CHECK; -- Do not check the pattern for UTF validity (only relevant if UTF is set)
-   UCP                : constant Compile_Options := PCRE2_UCP; -- Use Unicode properties for \d, \w, etc.
-   UNGREEDY           : constant Compile_Options := PCRE2_UNGREEDY ; -- Invert greediness of quantifiers
-   USE_OFFSET_LIMIT   : constant Compile_Options := PCRE2_USE_OFFSET_LIMIT ; -- Enable offset limit for unanchored matching
-   UTF                : constant Compile_Options := PCRE2_UTF ; -- Treat pattern and subjects as UTF strings
-   Null_Compile_Options : constant Compile_Options := 0;
 
-   type Extra_Options  is new Compile_Options;
-   EXTRA_ALLOW_SURROGATE_ESCAPES : constant Extra_Options := PCRE2_EXTRA_ALLOW_SURROGATE_ESCAPES;
-   EXTRA_BAD_ESCAPE_IS_LITERAL   : constant Extra_Options := PCRE2_EXTRA_BAD_ESCAPE_IS_LITERAL;
-   EXTRA_MATCH_WORD              : constant Extra_Options := PCRE2_EXTRA_MATCH_WORD;
-   EXTRA_MATCH_LINE              : constant Extra_Options := PCRE2_EXTRA_MATCH_LINE;
-   EXTRA_ESCAPED_CR_IS_LF        : constant Extra_Options := PCRE2_EXTRA_ESCAPED_CR_IS_LF;
-   EXTRA_ALT_BSUX                : constant Extra_Options := PCRE2_EXTRA_ALT_BSUX;
+
    type Character_Tables is access Unsigned_Char;
 
    Null_General_Context : constant General_Context := (Ada.Finalization.Controlled with null);
    Null_Compile_Context : constant Compile_Context := (Ada.Finalization.Controlled with null, null);
    Null_Match_Context   : constant Match_Context := (Ada.Finalization.Controlled with null);
+   Null_Convert_Context : constant Convert_Context := (Ada.Finalization.Controlled with null);
 
-   type Match_Options is new UNsigned;
-   Null_Match_Options : constant Match_Options := 0;
-   Match_ANCHORED             : constant Match_Options := PCRE2_ANCHORED;
-   Match_COPY_MATCHED_SUBJECT : constant Match_Options := PCRE2_COPY_MATCHED_SUBJECT;
-   Match_ENDANCHORED          : constant Match_Options := PCRE2_ENDANCHORED;
-   Match_NOTBOL               : constant Match_Options := PCRE2_NOTBOL;
-   Match_NOTEOL               : constant Match_Options := PCRE2_NOTEOL;
-   Match_NOTEMPTY             : constant Match_Options := PCRE2_NOTEMPTY;
-   Match_NOTEMPTY_ATSTART     : constant Match_Options := PCRE2_NOTEMPTY_ATSTART;
-   Match_NO_JIT               : constant Match_Options := PCRE2_NO_JIT;
-   Match_NO_UTF_CHECK         : constant Match_Options := PCRE2_NO_UTF_CHECK;
-   Match_PARTIAL_HARD         : constant Match_Options := PCRE2_PARTIAL_HARD;
-   Match_PARTIAL_SOFT         : constant Match_Options := PCRE2_PARTIAL_SOFT;
    type Integer_Array is array (Natural range <>) of aliased int;
    type Workspace_Type (Size : Natural ) is record
       Data : Integer_Array (1 .. Size);
