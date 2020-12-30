@@ -1,10 +1,13 @@
+--  Do not edit!
+--   This file is generated from: pcre-matcher.ads
+
 with Interfaces.C; use Interfaces.C;
 with System;
 with Ada.Finalization;
 with System.Storage_Elements;
 
 private with Pcre.Low_Level.Pcre2_H;
-package Pcre.Matcher is
+package Pcre.Wide_Matcher is
 
    type General_Context is tagged private;
    Null_General_Context : constant General_Context;
@@ -22,7 +25,7 @@ package Pcre.Matcher is
 
    type Match_Data is tagged private with
      Constant_Indexing => Constant_Indexing;
-   function Constant_Indexing (Self : Match_Data ; Index : Natural) return String;
+   function Constant_Indexing (Self : Match_Data ; Index : Natural) return Wide_String;
 
    procedure Finalize   (Object : in out Match_Data);
 
@@ -39,16 +42,16 @@ package Pcre.Matcher is
       Capture_Top           : aliased Unsigned;
       Capture_Last          : aliased Unsigned;
       Offset_Vector         : access unsigned_long;
-      Mark                  : access Character;
-      Subject               : access Character;
+      Mark                  : access Wide_Character;
+      Subject               : access Wide_Character;
       Subject_Length        : aliased unsigned_long;
       Start_Match           : aliased unsigned_long;
       Current_Position      : aliased unsigned_long;
       Pattern_Position      : aliased unsigned_long;
       Next_Item_Length      : aliased unsigned_long;
-      Callout_String_Offset : aliased unsigned_long;
-      Callout_String_Length : aliased unsigned_long;
-      Callout_String        : access Character;
+      Callout_Wide_String_Offset : aliased unsigned_long;
+      Callout_Wide_String_Length : aliased unsigned_long;
+      Callout_Wide_String        : access Wide_Character;
       Callout_Flags         : aliased Unsigned;
    end record
      with Convention => C_Pass_By_Copy;
@@ -58,17 +61,17 @@ package Pcre.Matcher is
       Pattern_Position      : aliased unsigned_long;
       Next_Item_Length      : aliased unsigned_long;
       Callout_Number        : aliased Unsigned;
-      Callout_String_Offset : aliased unsigned_long;
-      Callout_String_Length : aliased unsigned_long;
-      Callout_String        : access Character;
+      Callout_Wide_String_Offset : aliased unsigned_long;
+      Callout_Wide_String_Length : aliased unsigned_long;
+      Callout_Wide_String        : access Wide_Character;
    end record
      with Convention => C_Pass_By_Copy;
 
    type Substitute_Callout_Block_Array1601 is array (0 .. 1) of aliased unsigned_long;
    type Substitute_Callout_Block is record
       Version        : aliased Unsigned;
-      Input          : access Character;
-      Output         : access Character;
+      Input          : access Wide_Character;
+      Output         : access Wide_Character;
       Output_Offsets : aliased Substitute_Callout_Block_Array1601;
       Ovector        : access unsigned_long;
       Oveccount      : aliased Unsigned;
@@ -89,8 +92,8 @@ package Pcre.Matcher is
    --
    --  This function sets the convention for processing \R within a compile context.
    --  -------------------------------------------------------------------------------------------------------------------------
-   type Character_Tables is private;
-   procedure Set_Character_Tables (Context : Compile_Context; To : Character_Tables);
+   type Wide_Character_Tables is private;
+   procedure Set_Wide_Character_Tables (Context : Compile_Context; To : Wide_Character_Tables);
    --
    --  This function sets a pointer to custom character tables within a compile context.
    --  The second argument must point to a set of PCRE2 character tables or be NULL to request the default tables.
@@ -148,7 +151,7 @@ package Pcre.Matcher is
    --  -------------------------------------------------------------------------------------------------------------------------
 
 
-   procedure Set_Glob_Escape (Context : Convert_Context; Escape_Character : Character);
+   procedure Set_Glob_Escape (Context : Convert_Context; Escape_Wide_Character : Wide_Character);
    --
    --  This function is part of an experimental set of pattern conversion functions.
    --  It sets the escape character that is used when converting globs.
@@ -156,7 +159,7 @@ package Pcre.Matcher is
    --  The default is grave accent if running under Windows, otherwise backslash.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   type Glob_Separator is new Character with Static_Predicate => Glob_Separator  in '/' | '\' | '.';
+   type Glob_Separator is new Wide_Character with Static_Predicate => Glob_Separator  in '/' | '\' | '.';
    procedure Set_Glob_Separator (Context : Convert_Context; Separator : Glob_Separator);
    --
    --  This function is part of an experimental set of pattern conversion functions.
@@ -166,13 +169,13 @@ package Pcre.Matcher is
    --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Pattern_Convert
-     (Pattern   : String;
+     (Pattern   : Wide_String;
       Options   : Unsigned;
       Buffer    : System.Address;
       Blength   : access unsigned_long;
       Cvcontext : access Convert_Context) with Obsolescent;
 
-   procedure Converted_Pattern_Free (Arg1 : access Character) with Obsolescent;
+   procedure Converted_Pattern_Free (Arg1 : access Wide_Character) with Obsolescent;
    --
    --  -------------------------------------------------------------------------------------------------------------------------
 
@@ -218,12 +221,12 @@ package Pcre.Matcher is
 
 
    function Compile
-     (Pattern : String;
+     (Pattern : Wide_String;
       Options : Compile_Options := Null_Compile_Options;
       Context : Compile_Context'Class := Null_Compile_Context) return Code;
    procedure Compile
      (Into    : in out Code;
-      Pattern : String;
+      Pattern : Wide_String;
       Options : Compile_Options := Null_Compile_Options;
       Context : Compile_Context'Class := Null_Compile_Context);
    --
@@ -247,7 +250,7 @@ package Pcre.Matcher is
 
    function Create (Size    : Positive;
                     Context : General_Context'Class := Null_General_Context) return Match_Data;
-   procedure Initialize (Match_Data : in out Pcre.Matcher.Match_Data;
+   procedure Initialize (Match_Data : in out Pcre.Wide_Matcher.Match_Data;
                          Size       : Positive;
                          Context    : General_Context'Class := Null_General_Context);
    --
@@ -258,10 +261,10 @@ package Pcre.Matcher is
    --  There is always one pair of offsets; if ovecsize is zero, it is treated as one.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Create (Code    : Pcre.Matcher.Code'Class;
+   function Create (Code    : Pcre.Wide_Matcher.Code'Class;
                     Context : General_Context'Class := Null_General_Context) return Match_Data;
-   procedure Initialize (Match_Data : in out Pcre.Matcher.Match_Data;
-                         Code       : Pcre.Matcher.Code'Class;
+   procedure Initialize (Match_Data : in out Pcre.Wide_Matcher.Match_Data;
+                         Code       : Pcre.Wide_Matcher.Code'Class;
                          Context    : General_Context'Class := Null_General_Context);
    --
    --  This function creates a new match data block, which is used for holding the result of a match.
@@ -274,12 +277,12 @@ package Pcre.Matcher is
 
    type Workspace_Type (Size : Natural)is private;
    function Dfa_Match
-     (Code        : Pcre.Matcher.Code;
-      Subject     : String;
+     (Code        : Pcre.Wide_Matcher.Code;
+      Subject     : Wide_String;
       Startoffset : Natural;
       Options     : Match_Options;
-      Match_Data  : out Pcre.Matcher.Match_Data'Class;
-      Context     : Pcre.Matcher.Match_Context'Class := Null_Match_Context;
+      Match_Data  : out Pcre.Wide_Matcher.Match_Data'Class;
+      Context     : Pcre.Wide_Matcher.Match_Context'Class := Null_Match_Context;
       Workspace   : Workspace_Type) return int;
    --
    --  Matches a compiled regular expression against a given subject string,
@@ -292,11 +295,11 @@ package Pcre.Matcher is
    --  -------------------------------------------------------------------------------------------------------------------------
 
    function Match
-     (Code        : Pcre.Matcher.Code; -- the compiled pattern
-      Subject     : String;
+     (Code        : Pcre.Wide_Matcher.Code; -- the compiled pattern
+      Subject     : Wide_String;
       Startoffset : Natural := 0;
       Options     : Match_Options := Null_Match_Options;
-      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Match_Data  : in out Pcre.Wide_Matcher.Match_Data'Class;
       Context     : Match_Context'Class := Null_Match_Context) return Integer;
    --
    --  Matches a compiled regular expression against a given subject string,
@@ -308,7 +311,7 @@ package Pcre.Matcher is
    --   or a negative error code for no match and other errors
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Get_Mark (Match_Data : Pcre.Matcher.Match_Data) return access Character;
+   function Get_Mark (Match_Data : Pcre.Wide_Matcher.Match_Data) return access Wide_Character;
    --
    --  After a call of match that was passed the match block that is this function's argument,
    --  this function returns a pointer to the last (*MARK), (*PRUNE), or (*THEN) name that was encountered during the matching process.
@@ -319,23 +322,23 @@ package Pcre.Matcher is
    --  After a failed match or a partial match, the last encountered name is returned.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Get_Size (Match_Data : Pcre.Matcher.Match_Data) return Natural;
+   function Get_Size (Match_Data : Pcre.Wide_Matcher.Match_Data) return Natural;
    --
    --  Returns the size, in bytes, of the match data block that is its argument.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Get_Ovector_Count (Match_Data : Pcre.Matcher.Match_Data) return Natural;
+   function Get_Ovector_Count (Match_Data : Pcre.Wide_Matcher.Match_Data) return Natural;
    --
    --  Returns the number of pairs of offsets in the ovector that forms part of the given match data block
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Get_Ovector_Pointer (Match_Data : Pcre.Matcher.Match_Data) return access unsigned_long;
+   function Get_Ovector_Pointer (Match_Data : Pcre.Wide_Matcher.Match_Data) return access unsigned_long;
    --
    --  Returns a pointer to the vector of offsets that forms part of the given match data block.
    --  The number of pairs can be found by calling pcre2_get_ovector_count().
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Get_Startchar (Match_Data : Pcre.Matcher.Match_Data) return unsigned_long;
+   function Get_Startchar (Match_Data : Pcre.Wide_Matcher.Match_Data) return unsigned_long;
    --
    --  After a successful call of pcre2_match() that was passed the match block that is this function's argument,
    --  this function returns the code unit offset of the character at which the successful match started.
@@ -345,47 +348,47 @@ package Pcre.Matcher is
    --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Name       : String;
-      Buffer     : out String;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Name       : Wide_String;
+      Buffer     : out Wide_String;
       Last       : out Natural);
 
    function Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Name       : String) return String;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Name       : Wide_String) return Wide_String;
 
    procedure Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
       Number     : Natural;
-      Buffer     : out String;
+      Buffer     : out Wide_String;
       Last       : out Natural);
 
    function Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Number     : Natural) return String;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Number     : Natural) return Wide_String;
    --
    --  This is a convenience function for extracting a captured substring into a given buffer.
    --  -------------------------------------------------------------------------------------------------------------------------
 
    function Substring_Length
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Name       : String) return Natural;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Name       : Wide_String) return Natural;
    --  returns the length of a matched substring, identified by name.
    --  -------------------------------------------------------------------------------------------------------------------------
 
    function Substring_Length
-     (Match_Data : Pcre.Matcher.Match_Data;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
       Number     : Natural) return Natural;
    --  returns the length of a matched substring, identified by number.
    --  -------------------------------------------------------------------------------------------------------------------------
 
    function Substring_Nametable_Scan
-     (Code  : Pcre.Matcher.Code;
-      Name  : String;
+     (Code  : Pcre.Wide_Matcher.Code;
+      Name  : Wide_String;
       First : System.Address;
       Last  : System.Address) return int;
 
-   function Number_From_Name (Code  : Pcre.Matcher.Code; Name  : String) return Natural;
+   function Number_From_Name (Code  : Pcre.Wide_Matcher.Code; Name  : Wide_String) return Natural;
    --  This convenience function finds the number of a named substring capturing parenthesis in a compiled pattern,
    --  provided that it is a unique name.
    --  The yield of the function is the number of the parenthesis if the name is found,
@@ -398,7 +401,7 @@ package Pcre.Matcher is
    procedure Substring_List_Free (Arg1 : System.Address);
 
    function Substring_List_Get
-     (Match_Data : Pcre.Matcher.Match_Data;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
       Arg2       : System.Address;
       Arg3       : System.Address) return int;
 
@@ -412,24 +415,24 @@ package Pcre.Matcher is
    function Serialize_Decode
      (Arg1 : System.Address;
       Arg2 : int;
-      Arg3 : access Character;
+      Arg3 : access Wide_Character;
       Arg4 : access General_Context) return int;
 
-   function Serialize_Get_Number_Of_Codes (Arg1 : access Character) return int;
+   function Serialize_Get_Number_Of_Codes (Arg1 : access Wide_Character) return int;
 
-   procedure Serialize_Free (Arg1 : access Character);
+   procedure Serialize_Free (Arg1 : access Wide_Character);
 
    procedure Substitute
      (Arg1       : access constant Code;
-      Arg2       : access Character;
+      Arg2       : access Wide_Character;
       Arg3       : unsigned_long;
       Arg4       : unsigned_long;
       Arg5       : Unsigned;
-      Match_Data : Pcre.Matcher.Match_Data'Class;
+      Match_Data : Pcre.Wide_Matcher.Match_Data'Class;
       Arg7       : access Match_Context'Class;
-      Arg8       : access Character;
+      Arg8       : access Wide_Character;
       Arg9       : unsigned_long;
-      Arg10      : access Character;
+      Arg10      : access Wide_Character;
       Arg11      : access unsigned_long);
 
    --  ===============================================================================================
@@ -439,7 +442,7 @@ package Pcre.Matcher is
 
    function Jit_Match
      (Arg1 : access constant Code;
-      Arg2 : access Character;
+      Arg2 : access Wide_Character;
       Arg3 : unsigned_long;
       Arg4 : unsigned_long;
       Arg5 : Unsigned;
@@ -461,22 +464,22 @@ package Pcre.Matcher is
    procedure Jit_Stack_Free (Arg1 : access Jit_Stack);
 
 
-   function Maketables (Context :  General_Context) return Character_Tables;
+   function Maketables (Context :  General_Context) return Wide_Character_Tables;
 
-   procedure Maketables_Free (Context :  General_Context; Tables : Character_Tables);
+   procedure Maketables_Free (Context :  General_Context; Tables : Wide_Character_Tables);
 
-   function Get_Error_Message (Code : int) return String;
+   function Get_Error_Message (Code : int) return Wide_String;
 private
    use Pcre.Low_Level.Pcre2_H;
    type General_Context is new Ada.Finalization.Controlled with record
-      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_General_Context_8;
+      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_General_Context_16;
    end record;
    procedure Initialize (Object : in out General_Context);
    procedure Adjust     (Object : in out General_Context);
    procedure Finalize   (Object : in out General_Context);
 
    type Compile_Context is  new Ada.Finalization.Controlled with record
-      Impl  : access Pcre.Low_Level.Pcre2_H.Pcre2_Compile_Context_8;
+      Impl  : access Pcre.Low_Level.Pcre2_H.Pcre2_Compile_Context_16;
       Guard : Recursion_Guard_Interface_Access;
    end record;
 
@@ -484,33 +487,33 @@ private
    procedure Finalize   (Object : in out Compile_Context);
 
    type Match_Context is new Ada.Finalization.Controlled with record
-      Impl  : access Pcre.Low_Level.Pcre2_H.Pcre2_Match_Context_8;
+      Impl  : access Pcre.Low_Level.Pcre2_H.Pcre2_Match_Context_16;
    end record;
    procedure Adjust     (Object : in out Match_Context);
    procedure Finalize   (Object : in out Match_Context);
 
    type Convert_Context is  new Ada.Finalization.Controlled with record
-      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Convert_Context_8;
+      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Convert_Context_16;
    end record;
 
    procedure Adjust     (Object : in out Convert_Context);
    procedure Finalize   (Object : in out Convert_Context);
 
    type Code is new Ada.Finalization.Controlled with record
-      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Code_8;
+      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Code_16;
    end record;
    procedure Initialize (Object : in out Code);
    procedure Adjust     (Object : in out Code);
    procedure Finalize   (Object : in out Code);
 
    type Match_Data is new Ada.Finalization.Controlled with record
-      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Match_Data_8;
+      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Match_Data_16;
    end record;
    procedure Adjust     (Object : in out Match_Data);
 
 
    type Jit_Stack is  new Ada.Finalization.Controlled with record
-      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Jit_Stack_8;
+      Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Jit_Stack_16;
    end record;
    procedure Initialize (Object : in out Jit_Stack);
    procedure Adjust     (Object : in out Jit_Stack);
@@ -518,7 +521,7 @@ private
 
 
 
-   type Character_Tables is access Unsigned_Char;
+   type Wide_Character_Tables is access Unsigned_Char;
 
    Null_General_Context : constant General_Context := (Ada.Finalization.Controlled with null);
    Null_Compile_Context : constant Compile_Context := (Ada.Finalization.Controlled with null, null);
@@ -530,4 +533,4 @@ private
       Data : Integer_Array (1 .. Size);
    end record;
 
-end   Pcre.Matcher;
+end   Pcre.Wide_Matcher;
