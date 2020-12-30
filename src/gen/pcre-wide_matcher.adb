@@ -1,13 +1,16 @@
+--  Do not edit!
+--   This file is generated from: pcre-matcher.adb
+
 pragma Ada_2012;
 with Ada.Unchecked_Conversion;
-package body Pcre.Matcher is
-   function As_PCRE2_SPTR8 is new Ada.Unchecked_Conversion (System.Address, PCRE2_SPTR8);
+package body Pcre.Wide_Matcher is
+   function As_PCRE2_SPTR16 is new Ada.Unchecked_Conversion (System.Address, PCRE2_SPTR16);
 
-   function Get_Error_Message (Code : int) return String is
+   function Get_Error_Message (Code : int) return Wide_String is
       Ret    : int;
-      Buffer : String (1 .. 1024);
+      Buffer : Wide_String (1 .. 1024);
    begin
-      Ret := Pcre2_Get_Error_Message_8 (Code, As_PCRE2_SPTR8 (Buffer'Address), Buffer'Length);
+      Ret := Pcre2_Get_Error_Message_16 (Code, As_PCRE2_SPTR16 (Buffer'Address), Buffer'Length);
       return Buffer (Buffer'First .. Natural (Ret));
    end;
 
@@ -30,20 +33,20 @@ package body Pcre.Matcher is
    procedure Set (Context : Compile_Context; Arg2 : Bsr_Type)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Bsr_8 (Context.Impl, Bsr_Type_Maping (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Bsr_16 (Context.Impl, Bsr_Type_Maping (Arg2)));
    end Set;
 
    --------------------------
-   -- Set_Character_Tables --
+   -- Set_Wide_Character_Tables --
    --------------------------
 
-   procedure Set_Character_Tables
-     (Context : Compile_Context; To : Character_Tables)
+   procedure Set_Wide_Character_Tables
+     (Context : Compile_Context; To : Wide_Character_Tables)
    is
       Data : aliased Unsigned_Char with Address => To.all'Address;
    begin
-      Retcode_2_Exception (Pcre2_Set_Character_Tables_8 (Context.Impl, To));
-   end Set_Character_Tables;
+      Retcode_2_Exception (Pcre2_Set_Character_Tables_16 (Context.Impl, To));
+   end Set_Wide_Character_Tables;
 
    -------------------------------
    -- Set_Compile_Extra_Options --
@@ -57,7 +60,7 @@ package body Pcre.Matcher is
      (Arg1 : Compile_Context; Arg2 : Extra_Options)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Compile_Extra_Options_8 (Arg1.Impl, Unsigned (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Compile_Extra_Options_16 (Arg1.Impl, Unsigned (Arg2)));
    end Set_Compile_Extra_Options;
 
    ----------------------------
@@ -68,7 +71,7 @@ package body Pcre.Matcher is
      (Arg1 : Compile_Context; Arg2 : Natural)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Max_Pattern_Length_8 (Arg1.Impl, unsigned_long (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Max_Pattern_Length_16 (Arg1.Impl, unsigned_long (Arg2)));
    end Set_Max_Pattern_Length;
 
    -----------------
@@ -85,7 +88,7 @@ package body Pcre.Matcher is
      (Context : Compile_Context; Arg2 : NEW_LINE_TYPE)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Newline_8 (Context.Impl, NEW_LINE_MAP (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Newline_16 (Context.Impl, NEW_LINE_MAP (Arg2)));
    end Set_Newline;
 
    ---------------------------
@@ -96,7 +99,7 @@ package body Pcre.Matcher is
      (Context : Compile_Context; Arg2 : Positive)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Parens_Nest_Limit_8 (Context.Impl, UNSIGNED (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Parens_Nest_Limit_16 (Context.Impl, UNSIGNED (Arg2)));
    end Set_Parens_Nest_Limit;
 
    ---------------------------------
@@ -114,7 +117,7 @@ package body Pcre.Matcher is
    begin
       Arg1.Guard := Guard;
       null;
-      --  Retcode_2_Exception (Pcre2_Set_Compile_Recursion_Guard_8 (Arg1.Impl, Arg2, Arg1.all'Address));
+      --  Retcode_2_Exception (Pcre2_Set_Compile_Recursion_Guard_16 (Arg1.Impl, Arg2, Arg1.all'Address));
    end Set_Compile_Recursion_Guard;
 
 
@@ -122,10 +125,10 @@ package body Pcre.Matcher is
    -- Set_Glob_Escape --
    ---------------------
 
-   procedure Set_Glob_Escape (Context : Convert_Context; Escape_Character : Character)
+   procedure Set_Glob_Escape (Context : Convert_Context; Escape_Wide_Character : Wide_Character)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Glob_Escape_8 (Context.Impl, Character'Pos (Escape_Character)));
+      Retcode_2_Exception (Pcre2_Set_Glob_Escape_16 (Context.Impl, Wide_Character'Pos (Escape_Wide_Character)));
    end Set_Glob_Escape;
 
    ------------------------
@@ -136,7 +139,7 @@ package body Pcre.Matcher is
      (Context : Convert_Context; Separator : Glob_Separator)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Glob_Separator_8 (Context.Impl, Glob_Separator'Pos (Separator)));
+      Retcode_2_Exception (Pcre2_Set_Glob_Separator_16 (Context.Impl, Glob_Separator'Pos (Separator)));
    end Set_Glob_Separator;
 
    ---------------------
@@ -144,7 +147,7 @@ package body Pcre.Matcher is
    ---------------------
 
    procedure Pattern_Convert
-     (Pattern   : String;
+     (Pattern   : Wide_String;
       Options   : Unsigned;
       Buffer    : System.Address;
       Blength   : access unsigned_long;
@@ -159,7 +162,7 @@ package body Pcre.Matcher is
    -- Converted_Pattern_Free --
    ----------------------------
 
-   procedure Converted_Pattern_Free (Arg1 : access Character) is
+   procedure Converted_Pattern_Free (Arg1 : access Wide_Character) is
    begin
       --  pragma Compile_Time_Warning(Standard.True, "Converted_Pattern_Free unimplemented");
       raise Program_Error with "Unimplemented procedure Converted_Pattern_Free";
@@ -199,7 +202,7 @@ package body Pcre.Matcher is
 
    procedure Set_Depth_Limit (Context : Match_Context; value : Natural) is
    begin
-      Retcode_2_Exception (Pcre2_Set_Depth_Limit_8 (Context.Impl, Unsigned (value)));
+      Retcode_2_Exception (Pcre2_Set_Depth_Limit_16 (Context.Impl, Unsigned (value)));
    end Set_Depth_Limit;
 
    --------------------
@@ -208,7 +211,7 @@ package body Pcre.Matcher is
 
    procedure Set_Heap_Limit (Context : access Match_Context; Limit : System.Storage_Elements.Storage_Count) is
    begin
-      Retcode_2_Exception (Pcre2_Set_Heap_Limit_8 (Context.Impl, Unsigned (Limit)));
+      Retcode_2_Exception (Pcre2_Set_Heap_Limit_16 (Context.Impl, Unsigned (Limit)));
    end Set_Heap_Limit;
 
    ---------------------
@@ -217,7 +220,7 @@ package body Pcre.Matcher is
 
    procedure Set_Match_Limit (Context : access Match_Context; Limit : Natural) is
    begin
-      Retcode_2_Exception (Pcre2_Set_Match_Limit_8 (Context.Impl, Unsigned (Limit)));
+      Retcode_2_Exception (Pcre2_Set_Match_Limit_16 (Context.Impl, Unsigned (Limit)));
    end Set_Match_Limit;
 
    ----------------------
@@ -228,7 +231,7 @@ package body Pcre.Matcher is
      (Context : access Match_Context; Limit : Natural)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Offset_Limit_8 (Context.Impl, unsigned_long (Limit)));
+      Retcode_2_Exception (Pcre2_Set_Offset_Limit_16 (Context.Impl, unsigned_long (Limit)));
    end Set_Offset_Limit;
 
    -------------------------
@@ -238,7 +241,7 @@ package body Pcre.Matcher is
    procedure Set_Recursion_Limit (Arg1 : access Match_Context; Arg2 : Natural)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Recursion_Limit_8 (Arg1.Impl, Unsigned (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Recursion_Limit_16 (Arg1.Impl, Unsigned (Arg2)));
    end Set_Recursion_Limit;
 
    -------------------------------------
@@ -260,7 +263,7 @@ package body Pcre.Matcher is
    -- Compile --
    -------------
    function Compile
-     (Pattern : String;           --  A string containing expression to be compiled
+     (Pattern : Wide_String;           --  A string containing expression to be compiled
       Options : Compile_Options := Null_Compile_Options;
       Context : Compile_Context'Class := Null_Compile_Context) return Code
    is
@@ -268,7 +271,7 @@ package body Pcre.Matcher is
       Erroroffset : aliased unsigned_long;
    begin
       return Ret : Code do
-         Ret.Impl := Pcre2_Compile_8 (As_PCRE2_SPTR8 (Pattern (Pattern'First)'Address),
+         Ret.Impl := Pcre2_Compile_16 (As_PCRE2_SPTR16 (Pattern (Pattern'First)'Address),
                                       Pattern'Length,
                                       Unsigned (Options),
                                       Errocode'Access,
@@ -282,14 +285,14 @@ package body Pcre.Matcher is
    end Compile;
 
    procedure Compile (Into : in out Code;
-                      Pattern : String;
+                      Pattern : Wide_String;
                       Options : Compile_Options := Null_Compile_Options;
                       Context : Compile_Context'Class := Null_Compile_Context) is
       Errocode    : aliased int;
       Erroroffset : aliased unsigned_long;
    begin
       Finalize (Into);
-      Into.Impl := Pcre2_Compile_8 (As_PCRE2_SPTR8 (Pattern (Pattern'First)'Address),
+      Into.Impl := Pcre2_Compile_16 (As_PCRE2_SPTR16 (Pattern (Pattern'First)'Address),
                                     Pattern'Length,
                                     Unsigned (Options),
                                     Errocode'Access,
@@ -331,11 +334,11 @@ package body Pcre.Matcher is
    -----------------------
    -- Match_Data_Create --
    -----------------------
-   procedure Initialize (Match_Data : in out Pcre.Matcher.Match_Data;
+   procedure Initialize (Match_Data : in out Pcre.Wide_Matcher.Match_Data;
                          Size       : Positive;
                          Context    : General_Context'Class := Null_General_Context)is
    begin
-      Match_Data.Impl := Pcre2_Match_Data_Create_8 (Unsigned (Size), Context.Impl);
+      Match_Data.Impl := Pcre2_Match_Data_Create_16 (Unsigned (Size), Context.Impl);
    end;
 
    function Create
@@ -344,7 +347,7 @@ package body Pcre.Matcher is
    is
    begin
       return Ret : Match_Data do
-         Ret.Impl := Pcre2_Match_Data_Create_8 (Unsigned (Size), Context.Impl);
+         Ret.Impl := Pcre2_Match_Data_Create_16 (Unsigned (Size), Context.Impl);
       end return;
    end Create;
 
@@ -353,20 +356,20 @@ package body Pcre.Matcher is
    ------------------------------------
 
    function Create
-     (Code    : Pcre.Matcher.Code'Class;
+     (Code    : Pcre.Wide_Matcher.Code'Class;
       Context : General_Context'Class := Null_General_Context) return Match_Data
    is
    begin
       return Ret : Match_Data do
-         Ret.Impl := Pcre2_Match_Data_Create_From_Pattern_8 (Code.Impl, Context.Impl);
+         Ret.Impl := Pcre2_Match_Data_Create_From_Pattern_16 (Code.Impl, Context.Impl);
       end return;
    end Create;
 
-   procedure Initialize (Match_Data : in out Pcre.Matcher.Match_Data;
-                         Code       : Pcre.Matcher.Code'Class;
+   procedure Initialize (Match_Data : in out Pcre.Wide_Matcher.Match_Data;
+                         Code       : Pcre.Wide_Matcher.Code'Class;
                          Context    : General_Context'Class := Null_General_Context)is
    begin
-      Match_Data.Impl := Pcre2_Match_Data_Create_From_Pattern_8 (Code.Impl, Context.Impl);
+      Match_Data.Impl := Pcre2_Match_Data_Create_From_Pattern_16 (Code.Impl, Context.Impl);
    end;
 
    ---------------
@@ -374,12 +377,12 @@ package body Pcre.Matcher is
    ---------------
 
    function Dfa_Match
-     (Code        : Pcre.Matcher.Code;
-      Subject     : String;
+     (Code        : Pcre.Wide_Matcher.Code;
+      Subject     : Wide_String;
       Startoffset : Natural;
       Options     : Match_Options;
-      Match_Data  : out Pcre.Matcher.Match_Data'Class;
-      Context     : Pcre.Matcher.Match_Context'Class := Null_Match_Context;
+      Match_Data  : out Pcre.Wide_Matcher.Match_Data'Class;
+      Context     : Pcre.Wide_Matcher.Match_Context'Class := Null_Match_Context;
       Workspace   : Workspace_Type) return int
    is
       pragma Unreferenced (Match_Data);
@@ -396,11 +399,11 @@ package body Pcre.Matcher is
    end;
 
    function Match
-     (Code        : Pcre.Matcher.Code;
-      Subject     : String;
+     (Code        : Pcre.Wide_Matcher.Code;
+      Subject     : Wide_String;
       Startoffset : Natural := 0;
       Options     : Match_Options := Null_Match_Options;
-      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Match_Data  : in out Pcre.Wide_Matcher.Match_Data'Class;
       Context     : Match_Context'Class := Null_Match_Context) return Integer
    is
       Ret : int;
@@ -408,8 +411,8 @@ package body Pcre.Matcher is
       if Match_Data.Impl = null then
          Match_Data.Initialize (Code);
       end if;
-      Ret := Pcre2_Match_8 (Code.Impl,
-                            As_PCRE2_SPTR8 (Subject'Address),
+      Ret := Pcre2_Match_16 (Code.Impl,
+                            As_PCRE2_SPTR16 (Subject'Address),
                             Subject'Length,
                             unsigned_long (Startoffset),
                             Unsigned (Options),
@@ -425,7 +428,7 @@ package body Pcre.Matcher is
    -- Get_Mark --
    --------------
 
-   function Get_Mark (Match_Data : Pcre.Matcher.Match_Data) return access Character is
+   function Get_Mark (Match_Data : Pcre.Wide_Matcher.Match_Data) return access Wide_Character is
    begin
       return raise Program_Error with "Unimplemented function Get_Mark";
    end Get_Mark;
@@ -434,19 +437,19 @@ package body Pcre.Matcher is
    -- Get_Match_Data_Size --
    -------------------------
 
-   function Get_Size (Match_Data : Pcre.Matcher.Match_Data) return Natural
+   function Get_Size (Match_Data : Pcre.Wide_Matcher.Match_Data) return Natural
    is
    begin
-      return Natural (Pcre2_Get_Match_Data_Size_8 (Match_Data.Impl));
+      return Natural (Pcre2_Get_Match_Data_Size_16 (Match_Data.Impl));
    end Get_Size;
 
    -----------------------
    -- Get_Ovector_Count --
    -----------------------
 
-   function Get_Ovector_Count (Match_Data : Pcre.Matcher.Match_Data) return Natural is
+   function Get_Ovector_Count (Match_Data : Pcre.Wide_Matcher.Match_Data) return Natural is
    begin
-      return Natural (Pcre2_Get_Ovector_Count_8 (Match_Data.Impl));
+      return Natural (Pcre2_Get_Ovector_Count_16 (Match_Data.Impl));
    end Get_Ovector_Count;
 
    -------------------------
@@ -454,7 +457,7 @@ package body Pcre.Matcher is
    -------------------------
 
    function Get_Ovector_Pointer
-     (Match_Data : Pcre.Matcher.Match_Data) return access unsigned_long
+     (Match_Data : Pcre.Wide_Matcher.Match_Data) return access unsigned_long
    is
    begin
       return
@@ -465,7 +468,7 @@ package body Pcre.Matcher is
    -- Get_Startchar --
    -------------------
 
-   function Get_Startchar (Match_Data : Pcre.Matcher.Match_Data) return unsigned_long is
+   function Get_Startchar (Match_Data : Pcre.Wide_Matcher.Match_Data) return unsigned_long is
    begin
       return raise Program_Error with "Unimplemented function Get_Startchar";
    end Get_Startchar;
@@ -475,25 +478,25 @@ package body Pcre.Matcher is
    ---------------------------
 
    procedure Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Name       : String;
-      Buffer     : out String;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Name       : Wide_String;
+      Buffer     : out Wide_String;
       Last       : out Natural)
    is
-      L_Buffer : aliased PCRE2_UCHAR8 with Import => True , Address => Buffer'Address;
+      L_Buffer : aliased PCRE2_UCHAR16 with Import => True , Address => Buffer'Address;
       L_Last   : aliased unsigned_long := Buffer'Length;
    begin
-      Retcode_2_Exception (Pcre2_Substring_Copy_Byname_8 (Match_Data.Impl,
-                           Arg2 => As_PCRE2_SPTR8 (Name'Address),
+      Retcode_2_Exception (Pcre2_Substring_Copy_Byname_16 (Match_Data.Impl,
+                           Arg2 => As_PCRE2_SPTR16 (Name'Address),
                            Arg3 => L_Buffer'Access,
                            Arg4 => L_Last'Access));
       Last := Natural (L_Last) + Buffer'First - 1;
    end Substring;
 
    function Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Name       : String) return String is
-      Buffer : String (1 .. 1024);
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Name       : Wide_String) return Wide_String is
+      Buffer : Wide_String (1 .. 1024);
       Last   : Natural;
    begin
       Match_Data.Substring (Name, Buffer, Last);
@@ -506,15 +509,15 @@ package body Pcre.Matcher is
    -----------------------------
 
    procedure Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
       Number     : Natural;
-      Buffer     : out String;
+      Buffer     : out Wide_String;
       Last       : out Natural)
    is
-      L_Buffer : aliased PCRE2_UCHAR8 with Import => True , Address => Buffer'Address;
+      L_Buffer : aliased PCRE2_UCHAR16 with Import => True , Address => Buffer'Address;
       L_Last   : aliased unsigned_long := Buffer'Length;
    begin
-      Retcode_2_Exception (pcre2_substring_copy_bynumber_8 (Match_Data.Impl,
+      Retcode_2_Exception (pcre2_substring_copy_bynumber_16 (Match_Data.Impl,
                            Arg2 => Unsigned (Number),
                            Arg3 => L_Buffer'Access,
                            Arg4 => L_Last'Access));
@@ -522,15 +525,15 @@ package body Pcre.Matcher is
    end Substring;
 
    function Substring
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Number     : Natural) return String  is
-      Buffer : String (1 .. 1024);
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Number     : Natural) return Wide_String  is
+      Buffer : Wide_String (1 .. 1024);
       Last   : Natural;
    begin
       Match_Data.Substring (Number, Buffer, Last);
       return Buffer (Buffer'First .. Last);
    end Substring;
-   function Constant_Indexing (Self : Match_Data ; Index : Natural) return String is
+   function Constant_Indexing (Self : Match_Data ; Index : Natural) return Wide_String is
    begin
       return Self.Substring (Index);
    end;
@@ -539,7 +542,7 @@ package body Pcre.Matcher is
    -- Substring_Free --
    --------------------
 
-   procedure Substring_Free (Arg1 : access Character) is
+   procedure Substring_Free (Arg1 : access Wide_Character) is
    begin
       raise Program_Error with "Unimplemented procedure Substring_Free";
    end Substring_Free;
@@ -549,13 +552,13 @@ package body Pcre.Matcher is
    -----------------------------
 
    function Substring_Length
-     (Match_Data : Pcre.Matcher.Match_Data;
-      Name       : String) return Natural
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
+      Name       : Wide_String) return Natural
    is
       Ret : aliased unsigned_long;
    begin
-      Retcode_2_Exception (Pcre2_Substring_Length_Byname_8 (Match_Data.Impl,
-                           As_PCRE2_SPTR8 (Name'Address),
+      Retcode_2_Exception (Pcre2_Substring_Length_Byname_16 (Match_Data.Impl,
+                           As_PCRE2_SPTR16 (Name'Address),
                            Ret'Access));
       return Natural (Ret);
    end Substring_Length;
@@ -565,12 +568,12 @@ package body Pcre.Matcher is
    -------------------------------
 
    function Substring_Length
-     (Match_Data : Pcre.Matcher.Match_Data;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
       Number     : Natural) return Natural
    is
       Ret : aliased unsigned_long;
    begin
-      Retcode_2_Exception (pcre2_substring_length_bynumber_8 (Match_Data.Impl,
+      Retcode_2_Exception (pcre2_substring_length_bynumber_16 (Match_Data.Impl,
                            Unsigned (Number),
                            Ret'Access));
       return Natural (Ret);
@@ -581,8 +584,8 @@ package body Pcre.Matcher is
    ------------------------------
 
    function Substring_Nametable_Scan
-     (Code  : Pcre.Matcher.Code;
-      Name  : String;
+     (Code  : Pcre.Wide_Matcher.Code;
+      Name  : Wide_String;
       First : System.Address;
       Last  : System.Address) return int
    is
@@ -599,7 +602,7 @@ package body Pcre.Matcher is
    --------------------------------
 
    function Number_From_Name
-     (Code  : Pcre.Matcher.Code; Name  : String) return Natural
+     (Code  : Pcre.Wide_Matcher.Code; Name  : Wide_String) return Natural
    is
    begin
       pragma Compile_Time_Warning
@@ -625,7 +628,7 @@ package body Pcre.Matcher is
    ------------------------
 
    function Substring_List_Get
-     (Match_Data : Pcre.Matcher.Match_Data;
+     (Match_Data : Pcre.Wide_Matcher.Match_Data;
       Arg2       : System.Address;
       Arg3       : System.Address) return int
    is
@@ -656,7 +659,7 @@ package body Pcre.Matcher is
    ----------------------
 
    function Serialize_Decode
-     (Arg1 : System.Address; Arg2 : int; Arg3 : access Character;
+     (Arg1 : System.Address; Arg2 : int; Arg3 : access Wide_Character;
       Arg4 : access General_Context) return int
    is
    begin
@@ -670,7 +673,7 @@ package body Pcre.Matcher is
    -- Serialize_Get_Number_Of_Codes --
    -----------------------------------
 
-   function Serialize_Get_Number_Of_Codes (Arg1 : access Character) return int
+   function Serialize_Get_Number_Of_Codes (Arg1 : access Wide_Character) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -684,7 +687,7 @@ package body Pcre.Matcher is
    -- Serialize_Free --
    --------------------
 
-   procedure Serialize_Free (Arg1 : access Character) is
+   procedure Serialize_Free (Arg1 : access Wide_Character) is
    begin
       pragma Compile_Time_Warning
         (Standard.True, "Serialize_Free unimplemented");
@@ -697,15 +700,15 @@ package body Pcre.Matcher is
 
    procedure Substitute
      (Arg1       : access constant Code;
-      Arg2       : access Character;
+      Arg2       : access Wide_Character;
       Arg3       : unsigned_long;
       Arg4       : unsigned_long;
       Arg5       : Unsigned;
-      Match_Data : Pcre.Matcher.Match_Data'Class;
+      Match_Data : Pcre.Wide_Matcher.Match_Data'Class;
       Arg7       : access Match_Context'Class;
-      Arg8       : access Character;
+      Arg8       : access Wide_Character;
       Arg9       : unsigned_long;
-      Arg10      : access Character;
+      Arg10      : access Wide_Character;
       Arg11      : access unsigned_long)
    is
    begin
@@ -728,7 +731,7 @@ package body Pcre.Matcher is
    ---------------
 
    function Jit_Match
-     (Arg1 : access constant Code; Arg2 : access Character;
+     (Arg1 : access constant Code; Arg2 : access Wide_Character;
       Arg3 : unsigned_long; Arg4 : unsigned_long; Arg5 : Unsigned;
       Arg6 : access Match_Data'Class; Arg7 : access Match_Context'Class)
       return int
@@ -794,7 +797,7 @@ package body Pcre.Matcher is
    -----------------------
 
    function Get_Error_Message
-     (Arg1 : int; Arg2 : access Character; Arg3 : unsigned_long) return int
+     (Arg1 : int; Arg2 : access Wide_Character; Arg3 : unsigned_long) return int
    is
    begin
       pragma Compile_Time_Warning
@@ -807,7 +810,7 @@ package body Pcre.Matcher is
    -- Maketables --
    ----------------
 
-   function Maketables (Context :  General_Context) return Character_Tables
+   function Maketables (Context :  General_Context) return Wide_Character_Tables
    is
    begin
       pragma Compile_Time_Warning (Standard.True, "Maketables unimplemented");
@@ -819,7 +822,7 @@ package body Pcre.Matcher is
    ---------------------
 
    procedure Maketables_Free
-     (Context :  General_Context; Tables : Character_Tables)
+     (Context :  General_Context; Tables : Wide_Character_Tables)
    is
    begin
       pragma Compile_Time_Warning
@@ -833,7 +836,7 @@ package body Pcre.Matcher is
 
    procedure Initialize (Object : in out General_Context) is
    begin
-      Object.Impl := Pcre2_General_Context_Create_8 (Arg1 => null,
+      Object.Impl := Pcre2_General_Context_Create_16 (Arg1 => null,
                                                      Arg2 => null,
                                                      Arg3 => System.Null_Address);
    end Initialize;
@@ -844,7 +847,7 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out General_Context) is
    begin
-      Object.Impl := Pcre2_General_Context_Copy_8 (Object.Impl);
+      Object.Impl := Pcre2_General_Context_Copy_16 (Object.Impl);
    end Adjust;
 
    --------------
@@ -854,7 +857,7 @@ package body Pcre.Matcher is
    procedure Finalize (Object : in out General_Context) is
    begin
       if Object.Impl /= null then
-         Pcre2_General_Context_Free_8 (Object.Impl);
+         Pcre2_General_Context_Free_16 (Object.Impl);
          Object.Impl := null;
       end if;
    end Finalize;
@@ -865,7 +868,7 @@ package body Pcre.Matcher is
    function Create (From : General_Context'Class := Null_General_Context) return Compile_Context is
    begin
       return Ret : Compile_Context do
-         Ret.Impl := Pcre2_Compile_Context_Create_8 (From.Impl);
+         Ret.Impl := Pcre2_Compile_Context_Create_16 (From.Impl);
       end return;
    end;
 
@@ -876,7 +879,7 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out Compile_Context) is
    begin
-      Object.Impl := Pcre2_Compile_Context_Copy_8 (Object.Impl);
+      Object.Impl := Pcre2_Compile_Context_Copy_16 (Object.Impl);
    end Adjust;
 
    --------------
@@ -886,7 +889,7 @@ package body Pcre.Matcher is
    procedure Finalize (Object : in out Compile_Context) is
    begin
       if Object.Impl /= null then
-         Pcre2_Compile_Context_Free_8 (Object.Impl);
+         Pcre2_Compile_Context_Free_16 (Object.Impl);
          Object.Impl := null;
       end if;
    end Finalize;
@@ -895,7 +898,7 @@ package body Pcre.Matcher is
    function Match_Context_Create (From : General_Context'Class) return Match_Context is
    begin
       return Ret : Match_Context do
-         Ret.Impl := Pcre2_Match_Context_Create_8 (From.Impl);
+         Ret.Impl := Pcre2_Match_Context_Create_16 (From.Impl);
       end return;
    end;
 
@@ -905,7 +908,7 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out Match_Context) is
    begin
-      Object.Impl := Pcre2_Match_Context_Copy_8 (Object.Impl);
+      Object.Impl := Pcre2_Match_Context_Copy_16 (Object.Impl);
    end Adjust;
 
    --------------
@@ -915,7 +918,7 @@ package body Pcre.Matcher is
    procedure Finalize (Object : in out Match_Context) is
    begin
       if Object.Impl /= null then
-         Pcre2_Match_Context_Free_8 (Object.Impl);
+         Pcre2_Match_Context_Free_16 (Object.Impl);
          Object.Impl := null;
       end if;
    end Finalize;
@@ -924,7 +927,7 @@ package body Pcre.Matcher is
    function Convert_Context_Create (From : General_Context'Class) return Convert_Context is
    begin
       return Ret : Convert_Context do
-         Ret.Impl := Pcre2_Convert_Context_Create_8 (From.Impl);
+         Ret.Impl := Pcre2_Convert_Context_Create_16 (From.Impl);
       end return;
    end;
 
@@ -934,7 +937,7 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out Convert_Context) is
    begin
-      Object.Impl := Pcre2_Convert_Context_Copy_8 (Object.Impl);
+      Object.Impl := Pcre2_Convert_Context_Copy_16 (Object.Impl);
    end Adjust;
 
    --------------
@@ -944,7 +947,7 @@ package body Pcre.Matcher is
    procedure Finalize (Object : in out Convert_Context) is
    begin
       if Object.Impl /= null then
-         Pcre2_Convert_Context_Free_8 (Object.Impl);
+         Pcre2_Convert_Context_Free_16 (Object.Impl);
          Object.Impl := null;
       end if;
    end Finalize;
@@ -964,7 +967,7 @@ package body Pcre.Matcher is
 
    procedure Adjust (Object : in out Code) is
    begin
-      Object.Impl := Pcre2_Code_Copy_With_Tables_8 (Object.Impl);
+      Object.Impl := Pcre2_Code_Copy_With_Tables_16 (Object.Impl);
    end Adjust;
 
    --------------
@@ -974,7 +977,7 @@ package body Pcre.Matcher is
    procedure Finalize (Object : in out Code) is
    begin
       if Object.Impl /= null then
-         Pcre2_Code_Free_8 (Object.Impl);
+         Pcre2_Code_Free_16 (Object.Impl);
          Object.Impl := null;
       end if;
    end Finalize;
@@ -995,7 +998,7 @@ package body Pcre.Matcher is
    procedure Finalize (Object : in out Match_Data) is
    begin
       if Object.Impl /= null then
-         Pcre2_Match_Data_Free_8 (Object.Impl);
+         Pcre2_Match_Data_Free_16 (Object.Impl);
          Object.Impl := null;
       end if;
    end Finalize;
@@ -1030,4 +1033,4 @@ package body Pcre.Matcher is
       raise Program_Error with "Unimplemented procedure Finalize";
    end Finalize;
 
-end Pcre.Matcher;
+end Pcre.Wide_Matcher;
