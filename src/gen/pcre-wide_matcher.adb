@@ -31,10 +31,10 @@ package body Pcre.Wide_Matcher is
 
    Bsr_Type_Maping : constant array (Bsr_Type) of Unsigned := (ANYCRLF => PCRE2_BSR_ANYCRLF,
                                                                UNICODE => PCRE2_BSR_UNICODE);
-   procedure Set (Context : Compile_Context; Arg2 : Bsr_Type)
+   procedure Set (Context : Compile_Context; Bsr : Bsr_Type)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Bsr_16 (Context.Impl, Bsr_Type_Maping (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Bsr_16 (Context.Impl, Bsr_Type_Maping (Bsr)));
    end Set;
 
    --------------------------
@@ -54,10 +54,10 @@ package body Pcre.Wide_Matcher is
    -------------------------------
 
    procedure Set_Compile_Extra_Options
-     (Arg1 : Compile_Context; Arg2 : Extra_Options)
+     (Context : Compile_Context; Options : Extra_Options)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Compile_Extra_Options_16 (Arg1.Impl, Unsigned (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Compile_Extra_Options_16 (Context.Impl, Unsigned (Options)));
    end Set_Compile_Extra_Options;
 
    ----------------------------
@@ -65,10 +65,10 @@ package body Pcre.Wide_Matcher is
    ----------------------------
 
    procedure Set_Max_Pattern_Length
-     (Arg1 : Compile_Context; Arg2 : Natural)
+     (Context : Compile_Context; Length : Natural)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Max_Pattern_Length_16 (Arg1.Impl, unsigned_long (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Max_Pattern_Length_16 (Context.Impl, unsigned_long (Length)));
    end Set_Max_Pattern_Length;
 
    -----------------
@@ -93,10 +93,10 @@ package body Pcre.Wide_Matcher is
    ---------------------------
 
    procedure Set_Parens_Nest_Limit
-     (Context : Compile_Context; Arg2 : Positive)
+     (Context : Compile_Context; Limit : Positive)
    is
    begin
-      Retcode_2_Exception (Pcre2_Set_Parens_Nest_Limit_16 (Context.Impl, UNSIGNED (Arg2)));
+      Retcode_2_Exception (Pcre2_Set_Parens_Nest_Limit_16 (Context.Impl, UNSIGNED (Limit)));
    end Set_Parens_Nest_Limit;
 
    ---------------------------------
@@ -373,7 +373,7 @@ package body Pcre.Wide_Matcher is
    -- Dfa_Match --
    ---------------
 
-   function Dfa_Match
+   function Match
      (Code        : Pcre.Wide_Matcher.Code;
       Subject     : Wide_String;
       Startoffset : Natural;
@@ -400,7 +400,7 @@ package body Pcre.Wide_Matcher is
          Retcode_2_Exception (Ret);
       end if;
       return Integer (Ret);
-   end Dfa_Match;
+   end Match;
 
    -----------
    -- Match --
@@ -592,18 +592,19 @@ package body Pcre.Wide_Matcher is
    -- Substring_Nametable_Scan --
    ------------------------------
 
-   function Substring_Nametable_Scan
+   procedure Substring_Nametable_Scan
      (Code  : Pcre.Wide_Matcher.Code;
       Name  : Wide_String;
       First : System.Address;
-      Last  : System.Address) return int
+      Last  : System.Address)
    is
+      Ret  : Interfaces.C.int;
+
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Substring_Nametable_Scan unimplemented");
-      return
-      raise Program_Error
-        with "Unimplemented function Substring_Nametable_Scan";
+      Ret := Pcre2_Substring_Nametable_Scan_16 (Code.Impl,
+                                               As_PCRE2_SPTR16 (Name'Address),
+                                               First, Last);
+      Retcode_2_Exception (Ret);
    end Substring_Nametable_Scan;
 
    --------------------------------
@@ -613,12 +614,11 @@ package body Pcre.Wide_Matcher is
    function Number_From_Name
      (Code  : Pcre.Wide_Matcher.Code; Name  : Wide_String) return Natural
    is
+      Ret : int;
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Substring_Number_From_Name unimplemented");
-      return
-      raise Program_Error
-        with "Unimplemented function Substring_Number_From_Name";
+      Ret := Pcre2_Substring_Number_From_Name_16 (Code.Impl,
+                                                 As_PCRE2_SPTR16 (Name'Address));
+      return Natural (Ret);
    end Number_From_Name;
 
    -------------------------
@@ -627,38 +627,41 @@ package body Pcre.Wide_Matcher is
 
    procedure Substring_List_Free (Arg1 : System.Address) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Substring_List_Free unimplemented");
       raise Program_Error with "Unimplemented procedure Substring_List_Free";
    end Substring_List_Free;
 
    ------------------------
    -- Substring_List_Get --
    ------------------------
-
    function Substring_List_Get
      (Match_Data : Pcre.Wide_Matcher.Match_Data;
       Arg2       : System.Address;
       Arg3       : System.Address) return int
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Substring_List_Get unimplemented");
       return
       raise Program_Error with "Unimplemented function Substring_List_Get";
    end Substring_List_Get;
+
+   function Get (Match_Data : Pcre.Wide_Matcher.Match_Data'Class) return Substring_List is
+   begin
+      return Ret : Substring_List do
+         null;
+      end return;
+   end;
 
    ----------------------
    -- Serialize_Encode --
    ----------------------
 
    function Serialize_Encode
-     (Arg1 : System.Address; Arg2 : int; Arg3 : System.Address;
-      Arg4 : access unsigned_long; Arg5 : access General_Context) return int
+     (codes : System.Address;
+      Arg2 : int;
+      Arg3 : System.Address;
+      Arg4 : access unsigned_long;
+      Context : access General_Context) return int
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Serialize_Encode unimplemented");
       return
       raise Program_Error with "Unimplemented function Serialize_Encode";
    end Serialize_Encode;
@@ -672,8 +675,6 @@ package body Pcre.Wide_Matcher is
       Arg4 : access General_Context) return int
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Serialize_Decode unimplemented");
       return
       raise Program_Error with "Unimplemented function Serialize_Decode";
    end Serialize_Decode;
@@ -685,8 +686,6 @@ package body Pcre.Wide_Matcher is
    function Serialize_Get_Number_Of_Codes (Arg1 : access Wide_Character) return int
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Serialize_Get_Number_Of_Codes unimplemented");
       return
       raise Program_Error
         with "Unimplemented function Serialize_Get_Number_Of_Codes";
@@ -698,8 +697,6 @@ package body Pcre.Wide_Matcher is
 
    procedure Serialize_Free (Arg1 : access Wide_Character) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Serialize_Free unimplemented");
       raise Program_Error with "Unimplemented procedure Serialize_Free";
    end Serialize_Free;
 
@@ -721,7 +718,6 @@ package body Pcre.Wide_Matcher is
       Arg11      : access unsigned_long)
    is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Substitute unimplemented");
       raise Program_Error with "Unimplemented procedure Substitute";
    end Substitute;
 
@@ -731,7 +727,6 @@ package body Pcre.Wide_Matcher is
 
    procedure Jit_Compile (Arg1 : access Code; Arg2 : Unsigned) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Jit_Compile unimplemented");
       raise Program_Error with "Unimplemented procedure Jit_Compile";
    end Jit_Compile;
 
@@ -746,7 +741,6 @@ package body Pcre.Wide_Matcher is
       return int
    is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Jit_Match unimplemented");
       return raise Program_Error with "Unimplemented function Jit_Match";
    end Jit_Match;
 
@@ -756,8 +750,6 @@ package body Pcre.Wide_Matcher is
 
    procedure Jit_Free_Unused_Memory (Arg1 : access General_Context) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Jit_Free_Unused_Memory unimplemented");
       raise Program_Error
         with "Unimplemented procedure Jit_Free_Unused_Memory";
    end Jit_Free_Unused_Memory;
@@ -771,8 +763,6 @@ package body Pcre.Wide_Matcher is
       Arg3 : access General_Context) return access Jit_Stack'Class
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Jit_Stack_Create unimplemented");
       return
       raise Program_Error with "Unimplemented function Jit_Stack_Create";
    end Jit_Stack_Create;
@@ -785,8 +775,6 @@ package body Pcre.Wide_Matcher is
      (Arg1 : access Match_Context; Arg2 : Jit_Callback; Arg3 : System.Address)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Jit_Stack_Assign unimplemented");
       raise Program_Error with "Unimplemented procedure Jit_Stack_Assign";
    end Jit_Stack_Assign;
 
@@ -796,24 +784,8 @@ package body Pcre.Wide_Matcher is
 
    procedure Jit_Stack_Free (Arg1 : access Jit_Stack) is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Jit_Stack_Free unimplemented");
       raise Program_Error with "Unimplemented procedure Jit_Stack_Free";
    end Jit_Stack_Free;
-
-   -----------------------
-   -- Get_Error_Message --
-   -----------------------
-
-   function Get_Error_Message
-     (Arg1 : int; Arg2 : access Wide_Character; Arg3 : unsigned_long) return int
-   is
-   begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Get_Error_Message unimplemented");
-      return
-      raise Program_Error with "Unimplemented function Get_Error_Message";
-   end Get_Error_Message;
 
    ----------------
    -- Maketables --
@@ -822,7 +794,6 @@ package body Pcre.Wide_Matcher is
    function Maketables (Context :  General_Context) return Wide_Character_Tables
    is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Maketables unimplemented");
       return raise Program_Error with "Unimplemented function Maketables";
    end Maketables;
 
@@ -834,8 +805,6 @@ package body Pcre.Wide_Matcher is
      (Context :  General_Context; Tables : Wide_Character_Tables)
    is
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Maketables_Free unimplemented");
       raise Program_Error with "Unimplemented procedure Maketables_Free";
    end Maketables_Free;
 
@@ -1018,7 +987,6 @@ package body Pcre.Wide_Matcher is
 
    procedure Initialize (Object : in out Jit_Stack) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Initialize unimplemented");
       raise Program_Error with "Unimplemented procedure Initialize";
    end Initialize;
 
@@ -1028,7 +996,6 @@ package body Pcre.Wide_Matcher is
 
    procedure Adjust (Object : in out Jit_Stack) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Adjust unimplemented");
       raise Program_Error with "Unimplemented procedure Adjust";
    end Adjust;
 
@@ -1038,8 +1005,40 @@ package body Pcre.Wide_Matcher is
 
    procedure Finalize (Object : in out Jit_Stack) is
    begin
-      pragma Compile_Time_Warning (Standard.True, "Finalize unimplemented");
       raise Program_Error with "Unimplemented procedure Finalize";
    end Finalize;
+
+   function Length (Self : Match_Data) return Natural is
+   begin
+      return Get_Ovector_Count (Self);
+   end;
+
+   procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code; Context : General_Context'Class) is
+   begin
+      null;
+   end;
+
+   procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code) is
+   begin
+      Read (S, Item, Null_General_Context);
+   end;
+
+   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code) is
+   begin
+      Write (S, Item, Null_General_Context);
+   end;
+
+   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class) is
+   begin
+      null;
+   end;
+
+   procedure Finalize   (Object : in out Substring_List) is
+   begin
+      pcre2_substring_list_free_16 (Object.Listptr);
+      Pcre2_Substring_List_Free_16 (Object.Lengthsptr);
+      Object.Listptr := System.Null_Address;
+      Object.Lengthsptr := System.Null_Address;
+   end;
 
 end Pcre.Wide_Matcher;

@@ -5,8 +5,9 @@ with Interfaces.C; use Interfaces.C;
 with System;
 with Ada.Finalization;
 with System.Storage_Elements;
-
+with Ada.Streams;
 private with Pcre.Low_Level.Pcre2_H;
+private with Interfaces.C.Extensions;
 package Pcre.Wide_Matcher is
 
    type General_Context is tagged private;
@@ -21,13 +22,17 @@ package Pcre.Wide_Matcher is
    type Convert_Context (<>) is tagged private;
    Null_Convert_Context : constant Convert_Context;
 
-   type Code is tagged private;
+   type Code is tagged private with
+     Read => Read,
+     Write => Write;
+
 
    type Match_Data is tagged private with
      Constant_Indexing => Constant_Indexing;
    function Constant_Indexing (Self : Match_Data ; Index : Natural) return Wide_String;
+   function Length (Self : Match_Data) return Natural;
 
-   procedure Finalize   (Object : in out Match_Data);
+   procedure Finalize (Object : in out Match_Data);
 
    type Jit_Stack is tagged private;
 
@@ -88,7 +93,7 @@ package Pcre.Wide_Matcher is
    --  -------------------------------------------------------------------------------------------------------------------------
 
    type Bsr_Type is (ANYCRLF, UNICODE);
-   procedure Set (Context : Compile_Context; Arg2 : Bsr_Type);
+   procedure Set (Context : Compile_Context; Bsr : Bsr_Type);
    --
    --  This function sets the convention for processing \R within a compile context.
    --  -------------------------------------------------------------------------------------------------------------------------
@@ -101,13 +106,13 @@ package Pcre.Wide_Matcher is
 
 
 
-   procedure Set_Compile_Extra_Options (Arg1 : Compile_Context; Arg2 : Extra_Options);
+   procedure Set_Compile_Extra_Options (Context : Compile_Context; Options : Extra_Options);
    --
    --  This function sets additional option bits for compile() that are housed in a compile context.
    --  It completely replaces all the bits.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Set_Max_Pattern_Length (Arg1 : Compile_Context; Arg2 : Natural);
+   procedure Set_Max_Pattern_Length (Context : Compile_Context; Length : Natural);
    --
    --  This function sets, in a compile context, the maximum text length (in code units)
    --   of the pattern that can be compiled.
@@ -127,7 +132,7 @@ package Pcre.Wide_Matcher is
    --  This specifies which character(s) are recognized as newlines when compiling and matching patterns.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Set_Parens_Nest_Limit (Context : Compile_Context; Arg2 : Positive);
+   procedure Set_Parens_Nest_Limit (Context : Compile_Context; Limit : Positive);
    --
    --  This function sets, in a compile context, the maximum depth of nested parentheses in a pattern.
    --  -------------------------------------------------------------------------------------------------------------------------
@@ -265,7 +270,7 @@ package Pcre.Wide_Matcher is
    --  -------------------------------------------------------------------------------------------------------------------------
 
    type Workspace_Type (Size : Natural)is private;
-   function Dfa_Match
+   function Match
      (Code        : Pcre.Wide_Matcher.Code;
       Subject     : Wide_String;
       Startoffset : Natural;
@@ -313,7 +318,7 @@ package Pcre.Wide_Matcher is
 
    function Get_Size (Match_Data : Pcre.Wide_Matcher.Match_Data) return Natural;
    --
-   --  Returns the size, in bytes, of the match data block that is its argument.
+   --  Returns the size, in bytes, of the match data block.
    --  -------------------------------------------------------------------------------------------------------------------------
 
    function Get_Ovector_Count (Match_Data : Pcre.Wide_Matcher.Match_Data) return Natural;
@@ -371,11 +376,11 @@ package Pcre.Wide_Matcher is
    --  returns the length of a matched substring, identified by number.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Substring_Nametable_Scan
+   procedure Substring_Nametable_Scan
      (Code  : Pcre.Wide_Matcher.Code;
       Name  : Wide_String;
       First : System.Address;
-      Last  : System.Address) return int;
+      Last  : System.Address);
 
    function Number_From_Name (Code  : Pcre.Wide_Matcher.Code; Name  : Wide_String) return Natural;
    --  This convenience function finds the number of a named substring capturing parenthesis in a compiled pattern,
@@ -387,28 +392,12 @@ package Pcre.Wide_Matcher is
    --   You can obtain the list of numbers with the same name by calling substring_nametable_scan.
    --  -------------------------------------------------------------------------------------------------------------------------
 
+   type Substring_List is tagged limited private;
+   function Get (Match_Data : Pcre.Wide_Matcher.Match_Data'Class) return Substring_List;
 
-   function Substring_List_Get
-     (Match_Data : Pcre.Wide_Matcher.Match_Data;
-      Arg2       : System.Address;
-      Arg3       : System.Address) return int;
+   --  =========================================================================================================================
+   --  =========================================================================================================================
 
-   function Serialize_Encode
-     (Arg1 : System.Address;
-      Arg2 : int;
-      Arg3 : System.Address;
-      Arg4 : access unsigned_long;
-      Arg5 : access General_Context) return int;
-
-   function Serialize_Decode
-     (Arg1 : System.Address;
-      Arg2 : int;
-      Arg3 : access Wide_Character;
-      Arg4 : access General_Context) return int;
-
-   function Serialize_Get_Number_Of_Codes (Arg1 : access Wide_Character) return int;
-
-   procedure Serialize_Free (Arg1 : access Wide_Character);
 
    procedure Substitute
      (Arg1       : access constant Code;
@@ -457,7 +446,14 @@ package Pcre.Wide_Matcher is
    procedure Maketables_Free (Context :  General_Context; Tables : Wide_Character_Tables);
 
    function Get_Error_Message (Code : int) return Wide_String;
+
+   procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code);
+   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code);
+   procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code; Context : General_Context'Class);
+   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class);
+
 private
+
    use Pcre.Low_Level.Pcre2_H;
    type General_Context is new Ada.Finalization.Controlled with record
       Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_General_Context_16;
@@ -507,6 +503,11 @@ private
    procedure Adjust     (Object : in out Jit_Stack);
    procedure Finalize   (Object : in out Jit_Stack);
 
+   type Substring_List is  new Ada.Finalization.Limited_Controlled with record
+      Listptr    : Interfaces.C.Extensions.Void_Ptr;
+      Lengthsptr : Interfaces.C.Extensions.Void_Ptr;
+   end record;
+   procedure Finalize   (Object : in out Substring_List);
 
 
    type Wide_Character_Tables is access Unsigned_Char;
