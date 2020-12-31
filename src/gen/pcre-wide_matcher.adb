@@ -3,6 +3,7 @@
 
 pragma Ada_2012;
 with Ada.Unchecked_Conversion;
+with Pcre.Low_Level.Linker_Options_16;
 package body Pcre.Wide_Matcher is
    function As_PCRE2_SPTR16 is new Ada.Unchecked_Conversion (System.Address, PCRE2_SPTR16);
 
@@ -51,10 +52,6 @@ package body Pcre.Wide_Matcher is
    -------------------------------
    -- Set_Compile_Extra_Options --
    -------------------------------
-   function "+" (L, R : Extra_Options) return Extra_Options is
-   begin
-      return Extra_Options (Unsigned (L)+ Unsigned (R));
-   end;
 
    procedure Set_Compile_Extra_Options
      (Arg1 : Compile_Context; Arg2 : Extra_Options)
@@ -383,20 +380,32 @@ package body Pcre.Wide_Matcher is
       Options     : Match_Options;
       Match_Data  : out Pcre.Wide_Matcher.Match_Data'Class;
       Context     : Pcre.Wide_Matcher.Match_Context'Class := Null_Match_Context;
-      Workspace   : Workspace_Type) return int
+      Workspace   : Workspace_Type) return Integer
    is
-      pragma Unreferenced (Match_Data);
+      Ret : int;
    begin
-      return raise Program_Error with "Unimplemented function Dfa_Match";
+      if Match_Data.Impl = null then
+         Match_Data.Initialize (Code);
+      end if;
+      Ret := Pcre2_Dfa_Match_16 (Code.Impl,
+                                As_PCRE2_SPTR16 (Subject'Address),
+                                Subject'Length,
+                                unsigned_long (Startoffset),
+                                Unsigned (Options),
+                                Match_Data.Impl,
+                                Context.Impl,
+                                Workspace.Data (Workspace.Data'First)'Unrestricted_Access,
+                                Workspace.Data'Length);
+      if Ret <= -1 then
+         Retcode_2_Exception (Ret);
+      end if;
+      return Integer (Ret);
    end Dfa_Match;
 
    -----------
    -- Match --
    -----------
-   function "+" (L, R : Match_Options) return Match_Options is
-   begin
-      return Match_Options (Unsigned (L)+ Unsigned (R));
-   end;
+
 
    function Match
      (Code        : Pcre.Wide_Matcher.Code;

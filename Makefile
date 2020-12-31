@@ -13,6 +13,7 @@ all:gen
 gen:.generate
 
 .generate:Makefile $(wildcard sed/*.sed) src/input.cpp
+
 	rm -rf  .gen src/gen
 	mkdir -p .gen src/gen
 

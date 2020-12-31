@@ -36,7 +36,6 @@ project Pcre is
       for Switches ("Ada") use ("-gnat2020", 
                                 "-g",
                                 "-gnatf", 
-                                -- "-fcallgraph-info=su,da",
                                 "-fdata-sections", 
                                 "-ffunction-sections",
                                 "-gnatwa",

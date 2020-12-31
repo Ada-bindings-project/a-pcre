@@ -168,17 +168,6 @@ package Pcre.Wide_Matcher is
    --  The default is backslash when running under Windows, otherwise forward slash.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Pattern_Convert
-     (Pattern   : Wide_String;
-      Options   : Unsigned;
-      Buffer    : System.Address;
-      Blength   : access unsigned_long;
-      Cvcontext : access Convert_Context) with Obsolescent;
-
-   procedure Converted_Pattern_Free (Arg1 : access Wide_Character) with Obsolescent;
-   --
-   --  -------------------------------------------------------------------------------------------------------------------------
-
    procedure Set_Callout
      (Context : access Match_Context;
       Arg2    : access function (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
@@ -283,7 +272,7 @@ package Pcre.Wide_Matcher is
       Options     : Match_Options;
       Match_Data  : out Pcre.Wide_Matcher.Match_Data'Class;
       Context     : Pcre.Wide_Matcher.Match_Context'Class := Null_Match_Context;
-      Workspace   : Workspace_Type) return int;
+      Workspace   : Workspace_Type) return Integer;
    --
    --  Matches a compiled regular expression against a given subject string,
    --  using an alternative matching algorithm that scans the subject string just once
@@ -398,7 +387,6 @@ package Pcre.Wide_Matcher is
    --   You can obtain the list of numbers with the same name by calling substring_nametable_scan.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Substring_List_Free (Arg1 : System.Address);
 
    function Substring_List_Get
      (Match_Data : Pcre.Wide_Matcher.Match_Data;
