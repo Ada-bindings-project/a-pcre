@@ -643,7 +643,8 @@ package body Pcre.Matcher is
    function Get (Match_Data : Pcre.Matcher.Match_Data'Class) return Substring_List is
    begin
       return Ret : Substring_List do
-         null;
+         Ret.Lengthsptr := System.Null_Address;
+         Ret.Listptr    := System.Null_Address;
       end return;
    end;
 
