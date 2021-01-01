@@ -194,9 +194,9 @@ package body Pcre.Matcher is
    -- Set_Depth_Limit --
    ---------------------
 
-   procedure Set_Depth_Limit (Context : Match_Context; value : Natural) is
+   procedure Set_Depth_Limit (Context : Match_Context; Value : Natural) is
    begin
-      Retcode_2_Exception (Pcre2_Set_Depth_Limit_8 (Context.Impl, Unsigned (value)));
+      Retcode_2_Exception (Pcre2_Set_Depth_Limit_8 (Context.Impl, Unsigned (Value)));
    end Set_Depth_Limit;
 
    --------------------
@@ -278,7 +278,7 @@ package body Pcre.Matcher is
       end return;
    end Compile;
 
-   procedure Compile (Into : in out Code;
+   procedure Compile (Into    : in out Code;
                       Pattern : String;
                       Options : Compile_Options := Null_Compile_Options;
                       Context : Compile_Context'Class := Null_Compile_Context) is
@@ -429,6 +429,28 @@ package body Pcre.Matcher is
       end if;
       return Integer (Ret);
    end Match;
+   procedure Match
+     (Code        : Pcre.Matcher.Code; -- the compiled pattern
+      Subject     : String;
+      Startoffset : Natural := 0;
+      Options     : Match_Options := Null_Match_Options;
+      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Context     : Match_Context'Class := Null_Match_Context) is
+      Dummy : Integer;
+   begin
+      Dummy := Match (Code, Subject, Startoffset, Options, Match_Data, Context);
+   end;
+
+   procedure Match
+     (Code        : String; -- the compiled pattern
+      Subject     : String;
+      Startoffset : Natural := 0;
+      Options     : Match_Options := Null_Match_Options;
+      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Context     : Match_Context'Class := Null_Match_Context) is
+   begin
+      Match (Compile (Code), Subject, Startoffset, Options, Match_Data, Context);
+   end;
 
    --------------
    -- Get_Mark --
@@ -523,7 +545,7 @@ package body Pcre.Matcher is
       L_Buffer : aliased PCRE2_UCHAR8 with Import => True , Address => Buffer'Address;
       L_Last   : aliased unsigned_long := Buffer'Length;
    begin
-      Retcode_2_Exception (pcre2_substring_copy_bynumber_8 (Match_Data.Impl,
+      Retcode_2_Exception (Pcre2_Substring_Copy_Bynumber_8 (Match_Data.Impl,
                            Arg2 => Unsigned (Number),
                            Arg3 => L_Buffer'Access,
                            Arg4 => L_Last'Access));
@@ -579,7 +601,7 @@ package body Pcre.Matcher is
    is
       Ret : aliased unsigned_long;
    begin
-      Retcode_2_Exception (pcre2_substring_length_bynumber_8 (Match_Data.Impl,
+      Retcode_2_Exception (Pcre2_Substring_Length_Bynumber_8 (Match_Data.Impl,
                            Unsigned (Number),
                            Ret'Access));
       return Natural (Ret);
@@ -653,10 +675,10 @@ package body Pcre.Matcher is
    ----------------------
 
    function Serialize_Encode
-     (codes : System.Address;
-      Arg2 : int;
-      Arg3 : System.Address;
-      Arg4 : access unsigned_long;
+     (Codes   : System.Address;
+      Arg2    : int;
+      Arg3    : System.Address;
+      Arg4    : access unsigned_long;
       Context : access General_Context) return int
    is
    begin
@@ -1033,7 +1055,7 @@ package body Pcre.Matcher is
 
    procedure Finalize   (Object : in out Substring_List) is
    begin
-      pcre2_substring_list_free_8 (Object.Listptr);
+      Pcre2_Substring_List_Free_8 (Object.Listptr);
       Pcre2_Substring_List_Free_8 (Object.Lengthsptr);
       Object.Listptr := System.Null_Address;
       Object.Lengthsptr := System.Null_Address;

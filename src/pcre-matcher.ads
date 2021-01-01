@@ -292,6 +292,22 @@ package Pcre.Matcher is
       Options     : Match_Options := Null_Match_Options;
       Match_Data  : in out Pcre.Matcher.Match_Data'Class;
       Context     : Match_Context'Class := Null_Match_Context) return Integer;
+
+   procedure Match
+     (Code        : Pcre.Matcher.Code; -- the compiled pattern
+      Subject     : String;
+      Startoffset : Natural := 0;
+      Options     : Match_Options := Null_Match_Options;
+      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Context     : Match_Context'Class := Null_Match_Context);
+
+   procedure Match
+     (Code        : String; -- the compiled pattern
+      Subject     : String;
+      Startoffset : Natural := 0;
+      Options     : Match_Options := Null_Match_Options;
+      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Context     : Match_Context'Class := Null_Match_Context);
    --
    --  Matches a compiled regular expression against a given subject string,
    --   using a matching algorithm that is similar to Perl's.

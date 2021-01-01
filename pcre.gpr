@@ -1,6 +1,12 @@
 project Pcre is
+   
+   
    for Create_Missing_Dirs use "True";
-   for Source_Dirs use ("src/**",".","sed");
+   
+   type BUILD_KIND is ("static", "relocatable", "static-pic");
+   BUILD : BUILD_KIND := external ("LIBRARY_TYPE", "static");
+   
+   for Source_Dirs use ("src/**", ".", "sed");
    for Object_Dir use ".obj";
    for Library_Name use "APcre";
    for Library_Dir use "lib";
