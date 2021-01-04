@@ -372,10 +372,11 @@ package body Pcre.Matcher is
 
    function Match
      (Code        : Pcre.Matcher.Code;
-      Subject     : String;
-      Startoffset : Natural;
-      Options     : Match_Options;
-      Match_Data  : out Pcre.Matcher.Match_Data'Class;
+      Data        : String;
+      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Pcre.Matcher.Match_Context'Class := Null_Match_Context;
       Workspace   : Workspace_Type) return Integer
    is
@@ -385,15 +386,15 @@ package body Pcre.Matcher is
          Match_Data.Initialize (Code);
       end if;
       Ret := Pcre2_Dfa_Match_8 (Code.Impl,
-                                As_PCRE2_SPTR8 (Subject'Address),
-                                Subject'Length,
-                                unsigned_long (Startoffset),
+                                As_PCRE2_SPTR8 (Data'Address),
+                                unsigned_long (if Data_Last = Positive'Last then Data'Length else Data_Last - Data'First),
+                                unsigned_long (if Data_First = -1 then 0 else Data_First - Data'First),
                                 Unsigned (Options),
                                 Match_Data.Impl,
                                 Context.Impl,
                                 Workspace.Data (Workspace.Data'First)'Unrestricted_Access,
                                 Workspace.Data'Length);
-      if Ret <= -1 then
+      if Ret < -1 then
          Retcode_2_Exception (Ret);
       end if;
       return Integer (Ret);
@@ -405,11 +406,12 @@ package body Pcre.Matcher is
 
 
    function Match
-     (Code        : Pcre.Matcher.Code;
-      Subject     : String;
-      Startoffset : Natural := 0;
-      Options     : Match_Options := Null_Match_Options;
+     (Code        : Pcre.Matcher.Code; -- the compiled pattern
+      Data        : String;
       Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Match_Context'Class := Null_Match_Context) return Integer
    is
       Ret : int;
@@ -418,38 +420,40 @@ package body Pcre.Matcher is
          Match_Data.Initialize (Code);
       end if;
       Ret := Pcre2_Match_8 (Code.Impl,
-                            As_PCRE2_SPTR8 (Subject'Address),
-                            Subject'Length,
-                            unsigned_long (Startoffset),
+                            As_PCRE2_SPTR8 (Data'Address),
+                            unsigned_long (if Data_Last = Positive'Last then Data'Length else Data_Last - Data'First),
+                            unsigned_long (if Data_First = -1 then 0 else Data_First - Data'First),
                             Unsigned (Options),
                             Match_Data.Impl,
                             Context.Impl);
-      if Ret <= -1 then
+      if Ret < -1 then
          Retcode_2_Exception (Ret);
       end if;
       return Integer (Ret);
    end Match;
    procedure Match
      (Code        : Pcre.Matcher.Code; -- the compiled pattern
-      Subject     : String;
-      Startoffset : Natural := 0;
-      Options     : Match_Options := Null_Match_Options;
+      Data        : String;
       Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Match_Context'Class := Null_Match_Context) is
       Dummy : Integer;
    begin
-      Dummy := Match (Code, Subject, Startoffset, Options, Match_Data, Context);
+      Dummy := Match (Code, Data,  Match_Data, Data_First, Data_Last, Options,Context);
    end;
 
    procedure Match
      (Code        : String; -- the compiled pattern
-      Subject     : String;
-      Startoffset : Natural := 0;
-      Options     : Match_Options := Null_Match_Options;
+      Data        : String;
       Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Match_Context'Class := Null_Match_Context) is
    begin
-      Match (Compile (Code), Subject, Startoffset, Options, Match_Data, Context);
+      Match (Compile (Code), Data, Match_Data, Data_First, Data_Last, Options, Context);
    end;
 
    --------------
@@ -1038,6 +1042,11 @@ package body Pcre.Matcher is
       null;
    end;
 
+   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class) is
+   begin
+      null;
+   end;
+
    procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code) is
    begin
       Read (S, Item, Null_General_Context);
@@ -1048,10 +1057,7 @@ package body Pcre.Matcher is
       Write (S, Item, Null_General_Context);
    end;
 
-   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class) is
-   begin
-      null;
-   end;
+
 
    procedure Finalize   (Object : in out Substring_List) is
    begin

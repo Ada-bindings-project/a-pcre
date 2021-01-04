@@ -8,4 +8,3 @@ begin
    Aunit.Test_Cases.Registration.Register_Routine (Test, Test_Match_2'Access, "Test_Match_2");
    Aunit.Test_Cases.Registration.Register_Routine (Test, Test_Match_3'Access, "Test_Match_3");
 end Register_Tests;
--- end read-only

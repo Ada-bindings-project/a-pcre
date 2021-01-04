@@ -38,48 +38,9 @@ package Pcre.Matcher is
      with Convention => C;
 
 
-   type Callout_Block is record
-      Version               : aliased Unsigned;
-      Callout_Number        : aliased Unsigned;
-      Capture_Top           : aliased Unsigned;
-      Capture_Last          : aliased Unsigned;
-      Offset_Vector         : access unsigned_long;
-      Mark                  : access Character;
-      Subject               : access Character;
-      Subject_Length        : aliased unsigned_long;
-      Start_Match           : aliased unsigned_long;
-      Current_Position      : aliased unsigned_long;
-      Pattern_Position      : aliased unsigned_long;
-      Next_Item_Length      : aliased unsigned_long;
-      Callout_String_Offset : aliased unsigned_long;
-      Callout_String_Length : aliased unsigned_long;
-      Callout_String        : access Character;
-      Callout_Flags         : aliased Unsigned;
-   end record
-     with Convention => C_Pass_By_Copy;
-
-   type Callout_Enumerate_Block is record
-      Version               : aliased Unsigned;
-      Pattern_Position      : aliased unsigned_long;
-      Next_Item_Length      : aliased unsigned_long;
-      Callout_Number        : aliased Unsigned;
-      Callout_String_Offset : aliased unsigned_long;
-      Callout_String_Length : aliased unsigned_long;
-      Callout_String        : access Character;
-   end record
-     with Convention => C_Pass_By_Copy;
-
-   type Substitute_Callout_Block_Array1601 is array (0 .. 1) of aliased unsigned_long;
-   type Substitute_Callout_Block is record
-      Version        : aliased Unsigned;
-      Input          : access Character;
-      Output         : access Character;
-      Output_Offsets : aliased Substitute_Callout_Block_Array1601;
-      Ovector        : access unsigned_long;
-      Oveccount      : aliased Unsigned;
-      Subscount      : aliased Unsigned;
-   end record
-     with Convention => C_Pass_By_Copy;
+   type Callout_Block (<>) is private;
+   type Callout_Enumerate_Block (<>) is private;
+   type Substitute_Callout_Block (<>) is private;
 
    function Config (Arg1 : Unsigned; Arg2 : System.Address) return int;
 
@@ -131,26 +92,9 @@ package Pcre.Matcher is
 
    procedure Set_Parens_Nest_Limit (Context : Compile_Context; Limit : Positive);
    --
-   --  This function sets, in a compile context, the maximum depth of nested parentheses in a pattern.
+   --  This function sets the maximum depth of nested parentheses in a pattern.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   type Recursion_Guard_Interface is limited interface;
-   type Recursion_Guard_Interface_Access is access all Recursion_Guard_Interface'Class;
-
-   function Check (Guard : Recursion_Guard_Interface; Amount : Natural) return Boolean is abstract;
-
-   procedure Set_Compile_Recursion_Guard
-     (Arg1  : in out Compile_Context;
-      Guard : not null Recursion_Guard_Interface_Access);
-   --
-   --  This function defines, within a compile context, a function that is called whenever compile()
-   --  starts to compile a parenthesized part of a pattern.
-   --  The first argument to the function gives the current depth of parenthesis nesting,
-   --  and the second is user data that is supplied when the function is set up.
-   --  The callout function should return zero if all is well, or non-zero to force an error.
-   --  This feature is provided so that applications can check the available system stack space,
-   --  in order to avoid running out.
-   --  -------------------------------------------------------------------------------------------------------------------------
 
 
    procedure Set_Glob_Escape (Context : Convert_Context; Escape_Character : Character);
@@ -182,7 +126,7 @@ package Pcre.Matcher is
       Arg3    : System.Address) with Obsolescent;
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Set_Depth_Limit (Context : Match_Context; value : Natural);
+   procedure Set_Depth_Limit (Context : Match_Context; Value : Natural);
    --
    --  Sets the backtracking depth limit field in a match context.
    --  -------------------------------------------------------------------------------------------------------------------------
@@ -269,10 +213,11 @@ package Pcre.Matcher is
    type Workspace_Type (Size : Natural)is private;
    function Match
      (Code        : Pcre.Matcher.Code;
-      Subject     : String;
-      Startoffset : Natural;
-      Options     : Match_Options;
-      Match_Data  : out Pcre.Matcher.Match_Data'Class;
+      Data        : String;
+      Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Pcre.Matcher.Match_Context'Class := Null_Match_Context;
       Workspace   : Workspace_Type) return Integer;
    --
@@ -287,26 +232,29 @@ package Pcre.Matcher is
 
    function Match
      (Code        : Pcre.Matcher.Code; -- the compiled pattern
-      Subject     : String;
-      Startoffset : Natural := 0;
-      Options     : Match_Options := Null_Match_Options;
+      Data        : String;
       Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Match_Context'Class := Null_Match_Context) return Integer;
 
    procedure Match
      (Code        : Pcre.Matcher.Code; -- the compiled pattern
-      Subject     : String;
-      Startoffset : Natural := 0;
-      Options     : Match_Options := Null_Match_Options;
+      Data        : String;
       Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Match_Context'Class := Null_Match_Context);
 
    procedure Match
      (Code        : String; -- the compiled pattern
-      Subject     : String;
-      Startoffset : Natural := 0;
-      Options     : Match_Options := Null_Match_Options;
+      Data        : String;
       Match_Data  : in out Pcre.Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Match_Context'Class := Null_Match_Context);
    --
    --  Matches a compiled regular expression against a given subject string,
@@ -318,41 +266,6 @@ package Pcre.Matcher is
    --   or a negative error code for no match and other errors
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   function Get_Mark (Match_Data : Pcre.Matcher.Match_Data) return access Character;
-   --
-   --  After a call of match that was passed the match block that is this function's argument,
-   --  this function returns a pointer to the last (*MARK), (*PRUNE), or (*THEN) name that was encountered during the matching process.
-   --  The name is zero-terminated, and is within the compiled pattern.
-   --  The length of the name is in the preceding code unit.
-   --  If no name is available, NULL is returned.
-   --  After a successful match, the name that is returned is the last one on the matching path.
-   --  After a failed match or a partial match, the last encountered name is returned.
-   --  -------------------------------------------------------------------------------------------------------------------------
-
-   function Get_Size (Match_Data : Pcre.Matcher.Match_Data) return Natural;
-   --
-   --  Returns the size, in bytes, of the match data block.
-   --  -------------------------------------------------------------------------------------------------------------------------
-
-   function Get_Ovector_Count (Match_Data : Pcre.Matcher.Match_Data) return Natural;
-   --
-   --  Returns the number of pairs of offsets in the ovector that forms part of the given match data block
-   --  -------------------------------------------------------------------------------------------------------------------------
-
-   function Get_Ovector_Pointer (Match_Data : Pcre.Matcher.Match_Data) return access unsigned_long;
-   --
-   --  Returns a pointer to the vector of offsets that forms part of the given match data block.
-   --  The number of pairs can be found by calling pcre2_get_ovector_count().
-   --  -------------------------------------------------------------------------------------------------------------------------
-
-   function Get_Startchar (Match_Data : Pcre.Matcher.Match_Data) return unsigned_long;
-   --
-   --  After a successful call of pcre2_match() that was passed the match block that is this function's argument,
-   --  this function returns the code unit offset of the character at which the successful match started.
-   --  For a non-partial match, this can be different to the value of ovector[0]
-   --  if the pattern contains the \K escape sequence. After a partial match, however,
-   --  this value is always the same as ovector[0] because \K does not affect the result of a partial match.
-   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Substring
      (Match_Data : Pcre.Matcher.Match_Data;
@@ -411,6 +324,61 @@ package Pcre.Matcher is
    --  =========================================================================================================================
    --  =========================================================================================================================
 
+
+   type Recursion_Guard_Interface is limited interface;
+   type Recursion_Guard_Interface_Access is access all Recursion_Guard_Interface'Class;
+
+   function Check (Guard : Recursion_Guard_Interface; Amount : Natural) return Boolean is abstract;
+
+   procedure Set_Compile_Recursion_Guard
+     (Arg1  : in out Compile_Context;
+      Guard : not null Recursion_Guard_Interface_Access);
+   --
+   --  This function defines, within a compile context, a function that is called whenever compile()
+   --  starts to compile a parenthesized part of a pattern.
+   --  The first argument to the function gives the current depth of parenthesis nesting,
+   --  and the second is user data that is supplied when the function is set up.
+   --  The callout function should return zero if all is well, or non-zero to force an error.
+   --  This feature is provided so that applications can check the available system stack space,
+   --  in order to avoid running out.
+   --  -------------------------------------------------------------------------------------------------------------------------
+
+
+   function Get_Mark (Match_Data : Pcre.Matcher.Match_Data) return access Character;
+   --
+   --  After a call of match that was passed the match block that is this function's argument,
+   --  this function returns a pointer to the last (*MARK), (*PRUNE), or (*THEN) name that was encountered during the matching process.
+   --  The name is zero-terminated, and is within the compiled pattern.
+   --  The length of the name is in the preceding code unit.
+   --  If no name is available, NULL is returned.
+   --  After a successful match, the name that is returned is the last one on the matching path.
+   --  After a failed match or a partial match, the last encountered name is returned.
+   --  -------------------------------------------------------------------------------------------------------------------------
+
+   function Get_Size (Match_Data : Pcre.Matcher.Match_Data) return Natural;
+   --
+   --  Returns the size, in bytes, of the match data block.
+   --  -------------------------------------------------------------------------------------------------------------------------
+
+   function Get_Ovector_Count (Match_Data : Pcre.Matcher.Match_Data) return Natural;
+   --
+   --  Returns the number of pairs of offsets in the ovector that forms part of the given match data block
+   --  -------------------------------------------------------------------------------------------------------------------------
+
+   function Get_Ovector_Pointer (Match_Data : Pcre.Matcher.Match_Data) return access unsigned_long;
+   --
+   --  Returns a pointer to the vector of offsets that forms part of the given match data block.
+   --  The number of pairs can be found by calling pcre2_get_ovector_count().
+   --  -------------------------------------------------------------------------------------------------------------------------
+
+   function Get_Startchar (Match_Data : Pcre.Matcher.Match_Data) return unsigned_long;
+   --
+   --  After a successful call of pcre2_match() that was passed the match block that is this function's argument,
+   --  this function returns the code unit offset of the character at which the successful match started.
+   --  For a non-partial match, this can be different to the value of ovector[0]
+   --  if the pattern contains the \K escape sequence. After a partial match, however,
+   --  this value is always the same as ovector[0] because \K does not affect the result of a partial match.
+   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Substitute
      (Arg1       : access constant Code;
@@ -512,6 +480,7 @@ private
    type Jit_Stack is  new Ada.Finalization.Controlled with record
       Impl : access Pcre.Low_Level.Pcre2_H.Pcre2_Jit_Stack_8;
    end record;
+
    procedure Initialize (Object : in out Jit_Stack);
    procedure Adjust     (Object : in out Jit_Stack);
    procedure Finalize   (Object : in out Jit_Stack);
@@ -534,5 +503,9 @@ private
    type Workspace_Type (Size : Natural ) is record
       Data : Integer_Array (1 .. Size);
    end record;
+
+   type Callout_Block is new Pcre.Low_Level.Pcre2_H.Pcre2_Callout_Block_8;
+   type Callout_Enumerate_Block  is new Pcre.Low_Level.Pcre2_H.Pcre2_Callout_Enumerate_Block_8;
+   type Substitute_Callout_Block  is new Pcre.Low_Level.Pcre2_H.Pcre2_Substitute_Callout_Block_8;
 
 end   Pcre.Matcher;

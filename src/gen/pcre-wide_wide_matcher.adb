@@ -197,9 +197,9 @@ package body Pcre.Wide_Wide_Matcher is
    -- Set_Depth_Limit --
    ---------------------
 
-   procedure Set_Depth_Limit (Context : Match_Context; value : Natural) is
+   procedure Set_Depth_Limit (Context : Match_Context; Value : Natural) is
    begin
-      Retcode_2_Exception (Pcre2_Set_Depth_Limit_32 (Context.Impl, Unsigned (value)));
+      Retcode_2_Exception (Pcre2_Set_Depth_Limit_32 (Context.Impl, Unsigned (Value)));
    end Set_Depth_Limit;
 
    --------------------
@@ -281,7 +281,7 @@ package body Pcre.Wide_Wide_Matcher is
       end return;
    end Compile;
 
-   procedure Compile (Into : in out Code;
+   procedure Compile (Into    : in out Code;
                       Pattern : Wide_Wide_String;
                       Options : Compile_Options := Null_Compile_Options;
                       Context : Compile_Context'Class := Null_Compile_Context) is
@@ -375,10 +375,11 @@ package body Pcre.Wide_Wide_Matcher is
 
    function Match
      (Code        : Pcre.Wide_Wide_Matcher.Code;
-      Subject     : Wide_Wide_String;
-      Startoffset : Natural;
-      Options     : Match_Options;
-      Match_Data  : out Pcre.Wide_Wide_Matcher.Match_Data'Class;
+      Data        : Wide_Wide_String;
+      Match_Data  : in out Pcre.Wide_Wide_Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Pcre.Wide_Wide_Matcher.Match_Context'Class := Null_Match_Context;
       Workspace   : Workspace_Type) return Integer
    is
@@ -388,15 +389,15 @@ package body Pcre.Wide_Wide_Matcher is
          Match_Data.Initialize (Code);
       end if;
       Ret := Pcre2_Dfa_Match_32 (Code.Impl,
-                                As_PCRE2_SPTR32 (Subject'Address),
-                                Subject'Length,
-                                unsigned_long (Startoffset),
+                                As_PCRE2_SPTR32 (Data'Address),
+                                unsigned_long (if Data_Last = Positive'Last then Data'Length else Data_Last - Data'First),
+                                unsigned_long (if Data_First = -1 then 0 else Data_First - Data'First),
                                 Unsigned (Options),
                                 Match_Data.Impl,
                                 Context.Impl,
                                 Workspace.Data (Workspace.Data'First)'Unrestricted_Access,
                                 Workspace.Data'Length);
-      if Ret <= -1 then
+      if Ret < -1 then
          Retcode_2_Exception (Ret);
       end if;
       return Integer (Ret);
@@ -408,11 +409,12 @@ package body Pcre.Wide_Wide_Matcher is
 
 
    function Match
-     (Code        : Pcre.Wide_Wide_Matcher.Code;
-      Subject     : Wide_Wide_String;
-      Startoffset : Natural := 0;
-      Options     : Match_Options := Null_Match_Options;
+     (Code        : Pcre.Wide_Wide_Matcher.Code; -- the compiled pattern
+      Data        : Wide_Wide_String;
       Match_Data  : in out Pcre.Wide_Wide_Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
       Context     : Match_Context'Class := Null_Match_Context) return Integer
    is
       Ret : int;
@@ -421,17 +423,41 @@ package body Pcre.Wide_Wide_Matcher is
          Match_Data.Initialize (Code);
       end if;
       Ret := Pcre2_Match_32 (Code.Impl,
-                            As_PCRE2_SPTR32 (Subject'Address),
-                            Subject'Length,
-                            unsigned_long (Startoffset),
+                            As_PCRE2_SPTR32 (Data'Address),
+                            unsigned_long (if Data_Last = Positive'Last then Data'Length else Data_Last - Data'First),
+                            unsigned_long (if Data_First = -1 then 0 else Data_First - Data'First),
                             Unsigned (Options),
                             Match_Data.Impl,
                             Context.Impl);
-      if Ret <= -1 then
+      if Ret < -1 then
          Retcode_2_Exception (Ret);
       end if;
       return Integer (Ret);
    end Match;
+   procedure Match
+     (Code        : Pcre.Wide_Wide_Matcher.Code; -- the compiled pattern
+      Data        : Wide_Wide_String;
+      Match_Data  : in out Pcre.Wide_Wide_Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
+      Context     : Match_Context'Class := Null_Match_Context) is
+      Dummy : Integer;
+   begin
+      Dummy := Match (Code, Data,  Match_Data, Data_First, Data_Last, Options,Context);
+   end;
+
+   procedure Match
+     (Code        : Wide_Wide_String; -- the compiled pattern
+      Data        : Wide_Wide_String;
+      Match_Data  : in out Pcre.Wide_Wide_Matcher.Match_Data'Class;
+      Data_First  : Integer      := -1;
+      Data_Last   : Positive     := Positive'Last;
+      Options     : Match_Options := Null_Match_Options;
+      Context     : Match_Context'Class := Null_Match_Context) is
+   begin
+      Match (Compile (Code), Data, Match_Data, Data_First, Data_Last, Options, Context);
+   end;
 
    --------------
    -- Get_Mark --
@@ -526,7 +552,7 @@ package body Pcre.Wide_Wide_Matcher is
       L_Buffer : aliased PCRE2_UCHAR32 with Import => True , Address => Buffer'Address;
       L_Last   : aliased unsigned_long := Buffer'Length;
    begin
-      Retcode_2_Exception (pcre2_substring_copy_bynumber_32 (Match_Data.Impl,
+      Retcode_2_Exception (Pcre2_Substring_Copy_Bynumber_32 (Match_Data.Impl,
                            Arg2 => Unsigned (Number),
                            Arg3 => L_Buffer'Access,
                            Arg4 => L_Last'Access));
@@ -582,7 +608,7 @@ package body Pcre.Wide_Wide_Matcher is
    is
       Ret : aliased unsigned_long;
    begin
-      Retcode_2_Exception (pcre2_substring_length_bynumber_32 (Match_Data.Impl,
+      Retcode_2_Exception (Pcre2_Substring_Length_Bynumber_32 (Match_Data.Impl,
                            Unsigned (Number),
                            Ret'Access));
       return Natural (Ret);
@@ -646,7 +672,8 @@ package body Pcre.Wide_Wide_Matcher is
    function Get (Match_Data : Pcre.Wide_Wide_Matcher.Match_Data'Class) return Substring_List is
    begin
       return Ret : Substring_List do
-         null;
+         Ret.Lengthsptr := System.Null_Address;
+         Ret.Listptr    := System.Null_Address;
       end return;
    end;
 
@@ -655,10 +682,10 @@ package body Pcre.Wide_Wide_Matcher is
    ----------------------
 
    function Serialize_Encode
-     (codes : System.Address;
-      Arg2 : int;
-      Arg3 : System.Address;
-      Arg4 : access unsigned_long;
+     (Codes   : System.Address;
+      Arg2    : int;
+      Arg3    : System.Address;
+      Arg4    : access unsigned_long;
       Context : access General_Context) return int
    is
    begin
@@ -1018,6 +1045,11 @@ package body Pcre.Wide_Wide_Matcher is
       null;
    end;
 
+   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class) is
+   begin
+      null;
+   end;
+
    procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code) is
    begin
       Read (S, Item, Null_General_Context);
@@ -1028,14 +1060,11 @@ package body Pcre.Wide_Wide_Matcher is
       Write (S, Item, Null_General_Context);
    end;
 
-   procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class) is
-   begin
-      null;
-   end;
+
 
    procedure Finalize   (Object : in out Substring_List) is
    begin
-      pcre2_substring_list_free_32 (Object.Listptr);
+      Pcre2_Substring_List_Free_32 (Object.Listptr);
       Pcre2_Substring_List_Free_32 (Object.Lengthsptr);
       Object.Listptr := System.Null_Address;
       Object.Lengthsptr := System.Null_Address;

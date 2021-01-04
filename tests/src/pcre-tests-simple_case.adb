@@ -60,18 +60,14 @@ package body Pcre.Tests.Simple_Case is
 
    procedure Test_Match_3 (Test : in out AUnit.Test_Cases.Test_Case'Class) is
       Match_Data    : Pcre.Matcher.Match_Data;
-      Subject       : constant String := "Bullen 123.672";
-
-      Expected      : constant GNAT.Strings.String_List :=
-                        (1 => new String'("Bullen 123.672"),
-                         2 => new String'("Bullen"),
-                         3 => new String'("123.672"));
-
       Tc            : Test_Case renames Test_Case (Test);
+      --                                             012345678901234
+      Subject       : constant String (10 .. 24) := "0012a12b12c9999";
    begin
-      for I in 0 .. Natural (Tc.Re.Match (Subject, Match_Data => Match_Data)) -1 loop
-         Assert (Match_Data.Substring (I), Expected (I + 1).all, "Match failed");
-      end loop;
+      Pcre.Matcher.Match (".*?(12.).*", Subject, Match_Data, 10);
+      ASSERT (Match_Data (1), "12a", "Match Failed");
+      Pcre.Matcher.Match (".*?(12.).*", Subject, Match_Data, 13);
+      ASSERT (Match_Data (1), "12b", "Match Failed");
    end;
 
    function Name (Test : Test_Case) return AUnit.Message_String is
