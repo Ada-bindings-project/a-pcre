@@ -7,4 +7,6 @@ begin
    Aunit.Test_Cases.Registration.Register_Routine (Test, Test_Compile2'Access, "Test_Compile2");
    Aunit.Test_Cases.Registration.Register_Routine (Test, Test_Match_2'Access, "Test_Match_2");
    Aunit.Test_Cases.Registration.Register_Routine (Test, Test_Match_3'Access, "Test_Match_3");
+   Aunit.Test_Cases.Registration.Register_Routine (Test, Test_Serialize'Access, "Test_Serialize");
+   Aunit.Test_Cases.Registration.Register_Routine (Test, Test_Config'Access, "Test_Config");
 end Register_Tests;

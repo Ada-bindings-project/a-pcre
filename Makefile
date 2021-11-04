@@ -7,11 +7,12 @@ CFLAGS+=-fdump-ada-spec -C
 CFLAGS+=-fada-spec-parent=Pcre.Low_Level
 CFLAGS+=-DPCRE2_CODE_UNIT_WIDTH=8
 
-all:gen
+all:
+	
+gen:.generate
 	./generate_wide.py
 	./update_pcre_ads.py
 	gprbuild  -j0 -k -p -P pcre.gpr
-gen:.generate
 
 .generate:Makefile $(wildcard sed/*.sed) src/input.cpp
 

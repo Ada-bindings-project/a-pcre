@@ -16,6 +16,10 @@ package Pcre is
    EXTRA_ESCAPED_CR_IS_LF        : constant Extra_Options;
    EXTRA_ALT_BSUX                : constant Extra_Options;
    function "+" (L, R : Extra_Options) return Extra_Options;
+   function "-" (L, R : Extra_Options) return Extra_Options is abstract;
+   function "*" (L, R : Extra_Options) return Extra_Options is abstract;
+   function "/" (L, R : Extra_Options) return Extra_Options is abstract;
+   function "mod" (L, R : Extra_Options) return Extra_Options is abstract;
 
 
    type Compile_Options is private;
@@ -67,11 +71,30 @@ package Pcre is
    Match_PARTIAL_SOFT         : constant Match_Options; --  Return ERROR_PARTIAL for a partial match if no full matches are found
    function "+" (L, R : Match_Options) return Match_Options;
 
+   type Config_Settings is  mod 2 ** 32;
+   CONFIG_BSR               : constant Config_Settings := 0 with Annotate => (Src, PCRE2_CONFIG_BSR);
+   CONFIG_JIT               : constant Config_Settings := 1 with Annotate => (Src, PCRE2_CONFIG_JIT);
+   CONFIG_JITTARGET         : constant Config_Settings := 2 with Annotate => (Src, PCRE2_CONFIG_JITTARGET);
+   CONFIG_LINKSIZE          : constant Config_Settings := 3 with Annotate => (Src, PCRE2_CONFIG_LINKSIZE);
+   CONFIG_MATCHLIMIT        : constant Config_Settings := 4 with Annotate => (Src, PCRE2_CONFIG_MATCHLIMIT);
+   CONFIG_NEWLINE           : constant Config_Settings := 5 with Annotate => (Src, PCRE2_CONFIG_NEWLINE);
+   CONFIG_PARENSLIMIT       : constant Config_Settings := 6 with Annotate => (Src, PCRE2_CONFIG_PARENSLIMIT);
+   CONFIG_DEPTHLIMIT        : constant Config_Settings := 7 with Annotate => (Src, PCRE2_CONFIG_DEPTHLIMIT);
+   CONFIG_RECURSIONLIMIT    : constant Config_Settings := 7 with Annotate => (Src, PCRE2_CONFIG_RECURSIONLIMIT);
+   CONFIG_STACKRECURSE      : constant Config_Settings := 8 with Annotate => (Src, PCRE2_CONFIG_STACKRECURSE);
+   CONFIG_UNICODE           : constant Config_Settings := 9 with Annotate => (Src, PCRE2_CONFIG_UNICODE);
+   CONFIG_UNICODE_VERSION   : constant Config_Settings := 10 with Annotate => (Src, PCRE2_CONFIG_UNICODE_VERSION);
+   CONFIG_VERSION           : constant Config_Settings := 11 with Annotate => (Src, PCRE2_CONFIG_VERSION);
+   CONFIG_HEAPLIMIT         : constant Config_Settings := 12 with Annotate => (Src, PCRE2_CONFIG_HEAPLIMIT);
+   CONFIG_NEVER_BACKSLASH_C : constant Config_Settings := 13 with Annotate => (Src, PCRE2_CONFIG_NEVER_BACKSLASH_C);
+   CONFIG_COMPILED_WIDTHS   : constant Config_Settings := 14 with Annotate => (Src, PCRE2_CONFIG_COMPILED_WIDTHS);
+   CONFIG_TABLES_LENGTH     : constant Config_Settings := 15 with Annotate => (Src, PCRE2_CONFIG_TABLES_LENGTH);
+
    PCRE_ERROR : exception;
 
 
 private
-   procedure Retcode_2_Exception (Code : Interfaces.C.int);
+   procedure Retcode_2_Exception (Code : Interfaces.C.Int);
    --  Note there is some trickery just to guarantie that the values are from the lowlevelcode.
    --
    type Extra_Options  is mod 2 ** 32;
@@ -118,16 +141,19 @@ private
 
 
    type Match_Options is mod 2 ** 32;
-   Null_Match_Options         : constant Match_Options := 0;
-   Match_ANCHORED             : constant Match_Options := 16#8000_0000# with Annotate => (Src, PCRE2_ANCHORED);
-   Match_COPY_MATCHED_SUBJECT : constant Match_Options := 16#0000_4000# with Annotate => (Src, PCRE2_COPY_MATCHED_SUBJECT);
-   Match_ENDANCHORED          : constant Match_Options := 16#2000_0000# with Annotate => (Src, PCRE2_ENDANCHORED);
-   Match_NOTBOL               : constant Match_Options := 16#0000_0001# with Annotate => (Src, PCRE2_NOTBOL);
-   Match_NOTEOL               : constant Match_Options := 16#0000_0002# with Annotate => (Src, PCRE2_NOTEOL);
-   Match_NOTEMPTY             : constant Match_Options := 16#0000_0004# with Annotate => (Src, PCRE2_NOTEMPTY);
-   Match_NOTEMPTY_ATSTART     : constant Match_Options := 16#0000_0008# with Annotate => (Src, PCRE2_NOTEMPTY_ATSTART);
-   Match_NO_JIT               : constant Match_Options := 16#0000_2000# with Annotate => (Src, PCRE2_NO_JIT);
-   Match_NO_UTF_CHECK         : constant Match_Options := 16#4000_0000# with Annotate => (Src, PCRE2_NO_UTF_CHECK);
-   Match_PARTIAL_HARD         : constant Match_Options := 16#0000_0020# with Annotate => (Src, PCRE2_PARTIAL_HARD);
-   Match_PARTIAL_SOFT         : constant Match_Options := 16#0000_0010# with Annotate => (Src, PCRE2_PARTIAL_SOFT);
+   Null_Match_Options         : constant Match_Options := 16#00000000#;
+   Match_ANCHORED             : constant Match_Options := 16#80000000# with Annotate => (Src, PCRE2_ANCHORED); --  Match only at the first position
+   Match_COPY_MATCHED_SUBJECT : constant Match_Options := 16#00000001# with Annotate => (Src, PCRE2_UTF); --  On success, make a private subject copy
+   Match_ENDANCHORED          : constant Match_Options := 16#00000001# with Annotate => (Src, PCRE2_UTF); --  Pattern can match only at end of subject
+   Match_NOTBOL               : constant Match_Options := 16#00000001# with Annotate => (Src, PCRE2_NOTBOL); --  Subject string is not the beginning of a line
+   Match_NOTEOL               : constant Match_Options := 16#00000002# with Annotate => (Src, PCRE2_NOTEOL); --  Subject string is not the end of a line
+   Match_NOTEMPTY             : constant Match_Options := 16#00000004# with Annotate => (Src, PCRE2_NOTEMPTY); --  An empty string is not a valid match
+   Match_NOTEMPTY_ATSTART     : constant Match_Options := 16#00000008# with Annotate => (Src, PCRE2_NOTEMPTY_ATSTART); --  An empty string at the start of the subject is not a valid match
+   Match_NO_JIT               : constant Match_Options := 16#00002000# with Annotate => (Src, PCRE2_NO_JIT); --  Do not use JIT matching
+   Match_NO_UTF_CHECK         : constant Match_Options := 16#40000000# with Annotate => (Src, PCRE2_NO_UTF_CHECK); --  Do not check the subject for UTF validity (only relevant if UTF was set at compile time)
+   Match_PARTIAL_HARD         : constant Match_Options := 16#00000020# with Annotate => (Src, PCRE2_PARTIAL_HARD); --  Return ERROR_PARTIAL for a partial match even if there is a full match
+   Match_PARTIAL_SOFT         : constant Match_Options := 16#00000010# with Annotate => (Src, PCRE2_PARTIAL_SOFT); --  Return ERROR_PARTIAL for a partial match if no full matches are found
+
+
+
 end Pcre;

@@ -65,34 +65,35 @@ with Ada.Text_IO; use Ada.Text_IO;
 procedure Pcre2demo is
 --  int main(int argc, char **argv)
 --  {
-   --  PCRE2_SPTR pattern;     /* PCRE2_SPTR is a pointer to unsigned code units of */
-   --  PCRE2_SPTR subject;     /* the appropriate width (in this case, 8 bits). */
-   --  PCRE2_SPTR name_table;
-   --
-   --  int crlf_is_newline;
-   --  int errornumber;
-   --  int find_all;
-   --  int i;
-   --  int rc;
-   --  int utf8;
-   --
-   --  uint32_t option_bits
-   --  uint32_t namecount;
-   --  uint32_t name_entry_size;
-   --  uint32_t newline;
-   --
-   --  PCRE2_SIZE erroroffset;
-   --  PCRE2_SIZE *ovector;
-   --  PCRE2_SIZE subject_length;
-   --
+--  PCRE2_SPTR pattern;     /* PCRE2_SPTR is a pointer to unsigned code units of */
+--  PCRE2_SPTR subject;     /* the appropriate width (in this case, 8 bits). */
+--  PCRE2_SPTR name_table;
+--
+--  int crlf_is_newline;
+--  int errornumber;
+--  int find_all;
+--  int i;
+--  int rc;
+--  int utf8;
+--
+--  uint32_t option_bits
+--  uint32_t namecount;
+--  uint32_t name_entry_size;
+--  uint32_t newline;
+--
+--  PCRE2_SIZE erroroffset;
+--  PCRE2_SIZE *ovector;
+--  PCRE2_SIZE subject_length;
+--
    Match_Data    : Pcre.Matcher.Match_Data;
-   Ret           : Interfaces.C.int;
+   Ret           : Integer;
    Pattern       : constant String := (if Ada.Command_Line.Argument_Count >= 1 then Ada.Command_Line.Argument (1) else "(\w+) (\d+.\d+)");
    Subject       : constant String := (if Ada.Command_Line.Argument_Count >= 2 then Ada.Command_Line.Argument (2) else "Bullen 123.672");
+   Re            : Pcre.Matcher.Code;
    Find_All      : constant Boolean := (Ada.Command_Line.Argument_Count >= 3);
 begin
 
-   Re := Pcre.Matcher.Compile (pattern);
+   Re := Pcre.Matcher.Compile (Pattern);
    --  If the compilation succeeded, we call PCRE2 again, in order to do a pattern match against the subject string.
    --  This does just ONE match. If further matching is needed, it will be done below.
    --  Before running the match we must set up a match_data block for holding the result.
@@ -107,9 +108,9 @@ begin
    --  Now run the match.
    Ret := Re.Match (Subject, Match_Data => Match_Data);
    Put_Line (Ret'Img);
-   Put_Line (Match_Data.Substring (0));
-   Put_Line (Match_Data.Substring (1));
-   Put_Line (Match_Data.Substring (2));
+   Put_Line (Match_Data (0));
+   Put_Line (Match_Data (1));
+   Put_Line (Match_Data (2));
 
    --  /* Matching failed: handle error cases */
    --

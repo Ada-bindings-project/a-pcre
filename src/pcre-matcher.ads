@@ -42,7 +42,32 @@ package Pcre.Matcher is
    type Callout_Enumerate_Block (<>) is private;
    type Substitute_Callout_Block (<>) is private;
 
-   function Config (Arg1 : Unsigned; Arg2 : System.Address) return int;
+   type NEW_LINE_TYPE is (Cr,      --  Carriage return only
+                          Lf,      --  Linefeed only
+                          Crlf,    --  CR followed by LF only
+                          Anycrlf, --  Any of the above
+                          Any,     --  Any Unicode newline sequence
+                          Nul);    --  The NUL character (binary zero)
+
+   type Config_Type (What : Config_Settings; Size : Natural) is record
+      case What is
+      when CONFIG_BSR => BSR                             : int;
+      when CONFIG_COMPILED_WIDTHS => COMPILED_WIDTHS     : Natural;
+      when CONFIG_DEPTHLIMIT => DEPTHLIMIT               : Natural;
+      when CONFIG_HEAPLIMIT => HEAPLIMIT                 : Natural;
+      when CONFIG_JIT => JIT                             : Boolean;
+      when CONFIG_JITTARGET => JITTARGET                 : String (1 .. Size);
+      when CONFIG_LINKSIZE => LINKSIZE                   : Natural;
+      when CONFIG_MATCHLIMIT => MATCHLIMIT               : Natural;
+      when CONFIG_NEVER_BACKSLASH_C => NEVER_BACKSLASH_C : Boolean;
+      when CONFIG_NEWLINE => NEWLINE                     : NEW_LINE_TYPE;
+      when CONFIG_UNICODE => UNICODE                     : Boolean;
+      when CONFIG_UNICODE_VERSION => UNICODE_VERSION     : String (1 .. Size);
+      when CONFIG_VERSION => Version                     : String (1 .. Size);
+      when others => null;
+      end case;
+   end record;
+   function Config (What : Config_Settings) return Config_Type;
 
    --  -------------------------------------------------------------------------------------------------------------------------
 
@@ -78,12 +103,7 @@ package Pcre.Matcher is
    --  The default is effectively unlimited, being the largest value a PCRE2_SIZE variable can hold.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   type NEW_LINE_TYPE is (Cr,      --  Carriage return only
-                          Lf,      --  Linefeed only
-                          Crlf,    --  CR followed by LF only
-                          Anycrlf, --  Any of the above
-                          Any,     --  Any Unicode newline sequence
-                          Nul);    --  The NUL character (binary zero)
+
    procedure Set_Newline (Context : Compile_Context; Arg2 : NEW_LINE_TYPE);
    --
    --  This function sets the newline convention within a compile context.
@@ -114,17 +134,6 @@ package Pcre.Matcher is
    --  The default is backslash when running under Windows, otherwise forward slash.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Set_Callout
-     (Context : access Match_Context;
-      Arg2    : access function (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
-      Arg3    : System.Address) with Obsolescent;
-   --  -------------------------------------------------------------------------------------------------------------------------
-
-   procedure Set_Substitute_Callout
-     (Context : access Match_Context;
-      Arg2    : access function (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address) return int;
-      Arg3    : System.Address) with Obsolescent;
-   --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Set_Depth_Limit (Context : Match_Context; Value : Natural);
    --
@@ -146,13 +155,6 @@ package Pcre.Matcher is
    --  sets the offset limit field in a match context.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Set_Recursion_Memory_Management
-     (Context : access Match_Context;
-      Arg2    : access function (Arg1 : unsigned_long; Arg2 : System.Address) return System.Address;
-      Arg3    : access procedure (Arg1 : System.Address; Arg2 : System.Address);
-      Arg4    : System.Address);
-
-   --  -------------------------------------------------------------------------------------------------------------------------
 
 
    function Compile
@@ -160,7 +162,7 @@ package Pcre.Matcher is
       Options : Compile_Options := Null_Compile_Options;
       Context : Compile_Context'Class := Null_Compile_Context) return Code;
    procedure Compile
-     (Into    : in out Code;
+     (Into    : in out Pcre.Matcher.Code;
       Pattern : String;
       Options : Compile_Options := Null_Compile_Options;
       Context : Compile_Context'Class := Null_Compile_Context);
@@ -169,20 +171,6 @@ package Pcre.Matcher is
    --  A compile context is needed only if you want to provide custom memory allocation functions,
    --  or to provide an external function for system stack size checking, or to change one or more of these parameters.
    --  -------------------------------------------------------------------------------------------------------------------------
-
-   function Pattern_Info
-     (Arg1 : Code;
-      What : Unsigned;
-      Arg3 : System.Address) return int;
-
-   function Callout_Enumerate
-     (Arg1 : Code;
-      Arg2 : access function (Arg1 : access Callout_Enumerate_Block; Arg2 : System.Address) return int;
-      Arg3 : System.Address) return int;
-
-   --  =========================================================================================================================
-   --  =========================================================================================================================
-
    function Create (Size    : Positive;
                     Context : General_Context'Class := Null_General_Context) return Match_Data;
    procedure Initialize (Match_Data : in out Pcre.Matcher.Match_Data;
@@ -302,11 +290,6 @@ package Pcre.Matcher is
    --  returns the length of a matched substring, identified by number.
    --  -------------------------------------------------------------------------------------------------------------------------
 
-   procedure Substring_Nametable_Scan
-     (Code  : Pcre.Matcher.Code;
-      Name  : String;
-      First : System.Address;
-      Last  : System.Address);
 
    function Number_From_Name (Code  : Pcre.Matcher.Code; Name  : String) return Natural;
    --  This convenience function finds the number of a named substring capturing parenthesis in a compiled pattern,
@@ -322,14 +305,50 @@ package Pcre.Matcher is
    function Get (Match_Data : Pcre.Matcher.Match_Data'Class) return Substring_List;
 
    --  =========================================================================================================================
+   --
    --  =========================================================================================================================
 
+   function Pattern_Info
+     (Code  : Pcre.Matcher.Code;
+      What  : Unsigned;
+      Where : System.Address) return int;
+
+   function Callout_Enumerate
+     (Code         : Pcre.Matcher.Code;
+      Callback     : access function (Arg1 : access Callout_Enumerate_Block; Callout_Data : System.Address) return int;
+      Callout_Data : System.Address) return int;
+
+
+   procedure Set_Callout
+     (Context             : Match_Context;
+      Callout_Function    : access function (Arg1 : access Callout_Block; Callout_Data : System.Address) return int;
+      Callout_Data        : System.Address);
+   --  -------------------------------------------------------------------------------------------------------------------------
+
+   procedure Set_Substitute_Callout
+     (Context             : Match_Context;
+      Callout_Function    : access function (Arg1 : access Substitute_Callout_Block; Callout_Data : System.Address) return int;
+      Callout_Data        : System.Address);
+   --  -------------------------------------------------------------------------------------------------------------------------
+
+  procedure Substring_Nametable_Scan
+     (Code  : Pcre.Matcher.Code;
+      Name  : String;
+      First : System.Address;
+      Last  : System.Address);
 
    type Recursion_Guard_Interface is limited interface;
    type Recursion_Guard_Interface_Access is access all Recursion_Guard_Interface'Class;
 
    function Check (Guard : Recursion_Guard_Interface; Amount : Natural) return Boolean is abstract;
 
+   procedure Set_Recursion_Memory_Management
+     (Context : access Match_Context;
+      Arg2    : access function (Arg1 : unsigned_long; Arg2 : System.Address) return System.Address;
+      Arg3    : access procedure (Arg1 : System.Address; Arg2 : System.Address);
+      Arg4    : System.Address);
+
+   --  -------------------------------------------------------------------------------------------------------------------------
    procedure Set_Compile_Recursion_Guard
      (Arg1  : in out Compile_Context;
       Guard : not null Recursion_Guard_Interface_Access);
@@ -381,17 +400,15 @@ package Pcre.Matcher is
    --  -------------------------------------------------------------------------------------------------------------------------
 
    procedure Substitute
-     (Arg1       : access constant Code;
-      Arg2       : access Character;
-      Arg3       : unsigned_long;
-      Arg4       : unsigned_long;
-      Arg5       : Unsigned;
-      Match_Data : Pcre.Matcher.Match_Data'Class;
-      Arg7       : access Match_Context'Class;
-      Arg8       : access Character;
-      Arg9       : unsigned_long;
-      Arg10      : access Character;
-      Arg11      : access unsigned_long);
+     (Code              : Pcre.Matcher.Code;
+      Subject           : String;
+      Startoffset       : unsigned_long;
+      Options           : Unsigned;
+      Match_Data        : Pcre.Matcher.Match_Data'Class;
+      Context           : Match_Context'Class;
+      Replacement       : String;
+      Outputbuffer      : out String;
+      Last              : out unsigned_long);
 
    --  ===============================================================================================
    --  ===============================================================================================
@@ -432,7 +449,8 @@ package Pcre.Matcher is
    procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code);
    procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code; Context : General_Context'Class);
    procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class);
-
+   --  These routines will handle a patter in streameble format:
+   --  <length of binary><pcre binary format>
 private
 
    use Pcre.Low_Level.Pcre2_H;
@@ -486,8 +504,8 @@ private
    procedure Finalize   (Object : in out Jit_Stack);
 
    type Substring_List is  new Ada.Finalization.Limited_Controlled with record
-      Listptr    : Interfaces.C.Extensions.Void_Ptr;
-      Lengthsptr : Interfaces.C.Extensions.Void_Ptr;
+      Listptr    : Interfaces.C.Extensions.Void_Ptr := System.Null_Address;
+      Lengthsptr : Interfaces.C.Extensions.Void_Ptr := System.Null_Address;
    end record;
    procedure Finalize   (Object : in out Substring_List);
 

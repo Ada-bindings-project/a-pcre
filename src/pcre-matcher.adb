@@ -1,4 +1,5 @@
 pragma Ada_2012;
+with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Unchecked_Conversion;
 with Pcre.Low_Level.Linker_Options_8;
 package body Pcre.Matcher is
@@ -16,11 +17,27 @@ package body Pcre.Matcher is
    -- Config --
    ------------
 
-   function Config (Arg1 : Unsigned; Arg2 : System.Address) return int is
+   function Config (What : Config_Settings) return Config_Type is
+      Dummy : int;
    begin
-      return raise Program_Error with "Unimplemented function Config";
-   end Config;
-
+      return Ret : Config_Type (What, Natural (Pcre2_Config_8 (Unsigned (What), System.Null_Address))) do
+         Dummy := Pcre2_Config_8 (Unsigned (What), (case What is
+                                     when CONFIG_BSR                     => Ret.BSR'Address,
+                                     when CONFIG_COMPILED_WIDTHS         => Ret.COMPILED_WIDTHS'Address,
+                                     when CONFIG_DEPTHLIMIT              => Ret.DEPTHLIMIT'Address,
+                                     when CONFIG_HEAPLIMIT               => Ret.HEAPLIMIT'Address,
+                                     when CONFIG_JIT                     => Ret.JIT'Address,
+                                     when CONFIG_JITTARGET               => Ret.JITTARGET'Address,
+                                     when CONFIG_LINKSIZE                => Ret.LINKSIZE'Address,
+                                     when CONFIG_MATCHLIMIT              => Ret.MATCHLIMIT'Address,
+                                     when CONFIG_NEVER_BACKSLASH_C       => Ret.NEVER_BACKSLASH_C'Address,
+                                     when CONFIG_NEWLINE                 => Ret.NEWLINE'Address,
+                                     when CONFIG_UNICODE                 => Ret.UNICODE'Address,
+                                     when CONFIG_UNICODE_VERSION         => Ret.UNICODE_VERSION'Address,
+                                     when CONFIG_VERSION                 => Ret.Version'Address,
+                                     when others                         => System.Null_Address));
+      end return;
+   end;
 
    -------------
    -- Set_Bsr --
@@ -100,6 +117,7 @@ package body Pcre.Matcher is
    -- Set_Compile_Recursion_Guard --
    ---------------------------------
    function Compile_Recursion_Guard (Arg1 : Unsigned; Arg2 : System.Address) return int is
+      pragma Unreferenced (Arg1, Arg2);
    begin
       return 0;
    end;
@@ -169,9 +187,9 @@ package body Pcre.Matcher is
    -----------------
 
    procedure Set_Callout
-     (Context : access Match_Context;
-      Arg2    : access function (Arg1 : access Callout_Block; Arg2 : System.Address) return int;
-      Arg3    : System.Address)
+     (Context             : Match_Context;
+      Callout_Function    : access function (Arg1 : access Callout_Block; Callout_Data : System.Address) return int;
+      Callout_Data        : System.Address)
    is
    begin
       raise Program_Error with "Unimplemented procedure Set_Callout";
@@ -182,9 +200,9 @@ package body Pcre.Matcher is
    ----------------------------
 
    procedure Set_Substitute_Callout
-     (Context : access Match_Context;
-      Arg2    : access function (Arg1 : access Substitute_Callout_Block; Arg2 : System.Address) return int;
-      Arg3    : System.Address)
+     (Context             : Match_Context;
+      Callout_Function    : access function (Arg1 : access Substitute_Callout_Block; Callout_Data : System.Address) return int;
+      Callout_Data        : System.Address)
    is
    begin
       raise Program_Error with "Unimplemented procedure Set_Substitute_Callout";
@@ -304,9 +322,9 @@ package body Pcre.Matcher is
    ------------------
 
    function Pattern_Info
-     (Arg1 : Code;
-      What : Unsigned;
-      Arg3 : System.Address) return int
+     (Code  : Pcre.Matcher.Code;
+      What  : Unsigned;
+      Where : System.Address) return int
    is
    begin
       return raise Program_Error with "Unimplemented function Pattern_Info";
@@ -317,9 +335,9 @@ package body Pcre.Matcher is
    -----------------------
 
    function Callout_Enumerate
-     (Arg1 : Code;
-      Arg2 : access function (Arg1 : access Callout_Enumerate_Block; Arg2 : System.Address) return int;
-      Arg3 : System.Address) return int
+     (Code         : Pcre.Matcher.Code;
+      Callback     : access function (Arg1 : access Callout_Enumerate_Block; Callout_Data : System.Address) return int;
+      Callout_Data : System.Address) return int
    is
    begin
       return raise Program_Error with "Unimplemented function Callout_Enumerate";
@@ -441,7 +459,7 @@ package body Pcre.Matcher is
       Context     : Match_Context'Class := Null_Match_Context) is
       Dummy : Integer;
    begin
-      Dummy := Match (Code, Data,  Match_Data, Data_First, Data_Last, Options,Context);
+      Dummy := Match (Code, Data,  Match_Data, Data_First, Data_Last, Options, Context);
    end;
 
    procedure Match
@@ -661,6 +679,7 @@ package body Pcre.Matcher is
       Arg2       : System.Address;
       Arg3       : System.Address) return int
    is
+      pragma Unreferenced (Match_Data, Arg2, Arg3);
    begin
       return
       raise Program_Error with "Unimplemented function Substring_List_Get";
@@ -674,41 +693,13 @@ package body Pcre.Matcher is
       end return;
    end;
 
-   ----------------------
-   -- Serialize_Encode --
-   ----------------------
-
-   function Serialize_Encode
-     (Codes   : System.Address;
-      Arg2    : int;
-      Arg3    : System.Address;
-      Arg4    : access unsigned_long;
-      Context : access General_Context) return int
-   is
-   begin
-      return
-      raise Program_Error with "Unimplemented function Serialize_Encode";
-   end Serialize_Encode;
-
-   ----------------------
-   -- Serialize_Decode --
-   ----------------------
-
-   function Serialize_Decode
-     (Arg1 : System.Address; Arg2 : int; Arg3 : access Character;
-      Arg4 : access General_Context) return int
-   is
-   begin
-      return
-      raise Program_Error with "Unimplemented function Serialize_Decode";
-   end Serialize_Decode;
-
    -----------------------------------
    -- Serialize_Get_Number_Of_Codes --
    -----------------------------------
 
    function Serialize_Get_Number_Of_Codes (Arg1 : access Character) return int
    is
+      pragma Unreferenced (Arg1);
    begin
       return
       raise Program_Error
@@ -729,17 +720,15 @@ package body Pcre.Matcher is
    ----------------
 
    procedure Substitute
-     (Arg1       : access constant Code;
-      Arg2       : access Character;
-      Arg3       : unsigned_long;
-      Arg4       : unsigned_long;
-      Arg5       : Unsigned;
-      Match_Data : Pcre.Matcher.Match_Data'Class;
-      Arg7       : access Match_Context'Class;
-      Arg8       : access Character;
-      Arg9       : unsigned_long;
-      Arg10      : access Character;
-      Arg11      : access unsigned_long)
+     (Code              : Pcre.Matcher.Code;
+      Subject           : String;
+      Startoffset       : unsigned_long;
+      Options           : Unsigned;
+      Match_Data        : Pcre.Matcher.Match_Data'Class;
+      Context           : Match_Context'Class;
+      Replacement       : String;
+      Outputbuffer      : out String;
+      Last              : out unsigned_long)
    is
    begin
       raise Program_Error with "Unimplemented procedure Substitute";
@@ -1038,13 +1027,44 @@ package body Pcre.Matcher is
    end;
 
    procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code; Context : General_Context'Class) is
+      use Ada.Streams;
+      Last   : aliased unsigned_long;
+      Ret    : int;
    begin
-      null;
+      unsigned_long'Read (S, Last);
+      declare
+         type Buffer_Type is array (1 .. Last) of aliased Unsigned_Char;
+         Buffer : Buffer_Type;
+      begin
+         Buffer_Type'Read (S, Buffer);
+         Ret := Pcre2_Serialize_Decode_8 (Arg1 => Item.Impl'Address,
+                                          Arg2 => 1,
+                                          Arg3 => Buffer (Buffer'First)'Access,
+                                          Arg4 => Context.Impl);
+      end;
+      if Ret < 0 then
+         Retcode_2_Exception (Ret);
+      end if;
    end;
 
    procedure Write (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : in Code; Context : General_Context'Class) is
+      use Ada.Streams;
+      type Buffer_Type is new Ada.Streams.Stream_Element_Array (1 .. 1024 * 1024);
+      type Buffer_Type_Access is access all Buffer_Type with Storage_Size => 0;
+      Buffer : Buffer_Type_Access;
+      Last   : aliased unsigned_long := Buffer_Type'Length;
+      Ret    : int;
    begin
-      null;
+      Ret := Pcre2_Serialize_Encode_8 (Arg1 => Item.Impl'Address,
+                                       Arg2 => 1,
+                                       Arg3 => Buffer'Address,
+                                       Arg4 => Last'Access,
+                                       Arg5 => Context.Impl);
+      if Ret < 0 then
+         Retcode_2_Exception (Ret);
+      end if;
+      unsigned_long'Write (S, Last);
+      Buffer_Type'Write (S, Buffer (Buffer'First .. Ada.Streams.Stream_Element_Offset (Last)));
    end;
 
    procedure Read (S : not null access Ada.Streams.Root_Stream_Type'Class; Item : out Code) is
